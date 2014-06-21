@@ -1,0 +1,56 @@
+{
+  "name": "del",
+  "version": "0.0.0",
+  "description": "Delete files/folders using globs",
+  "license": "MIT",
+  "repository": "sindresorhus/del",
+  "author": {
+    "name": "Sindre Sorhus",
+    "email": "sindresorhus@gmail.com",
+    "url": "http://sindresorhus.com"
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "files": [
+    "index.js"
+  ],
+  "keywords": [
+    "delete",
+    "del",
+    "remove",
+    "destroy",
+    "trash",
+    "unlink",
+    "clean",
+    "cleaning",
+    "cleanup",
+    "rm",
+    "rmrf",
+    "rimraf",
+    "rmdir",
+    "glob",
+    "gulpfriendly",
+    "file",
+    "files",
+    "folder",
+    "dir",
+    "directory",
+    "fs",
+    "filesystem"
+  ],
+  "dependencies": {
+    "each-async": "^0.1.3",
+    "globby": "^0.1.1",
+    "is-path-cwd": "^0.1.0",
+    "is-path-in-cwd": "^0.1.0",
+    "rimraf": "^2.2.8"
+  },
+  "devDependencies": {
+    "fs-extra": "^0.9.1",
+    "mocha": "*"
+  }
+}
