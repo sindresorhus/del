@@ -2,7 +2,8 @@
 
 > Delete files/folders using [globs](https://github.com/isaacs/minimatch#usage)
 
-Pretty much [rimraf](https://github.com/isaacs/rimraf) with support for multiple files and globbing.
+Pretty much [rimraf](https://github.com/isaacs/rimraf) with support for multiple files and globbing.  
+It also protects you against deleting the current working directory and above.
 
 
 ## Install
