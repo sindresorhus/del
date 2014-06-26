@@ -24,7 +24,7 @@ module.exports = function (patterns, opts, cb) {
 	var force = opts.force;
 	delete opts.force;
 
-	globby(patterns, function (err, files) {
+	globby(patterns, opts, function (err, files) {
 		if (err) {
 			cb(err);
 			return;
