@@ -1,4 +1,3 @@
-/*global it, beforeEach, afterEach */
 'use strict';
 var assert = require('assert');
 var fs = require('fs-extra');
@@ -11,9 +10,7 @@ beforeEach(function () {
 		'3.tmp',
 		'4.tmp',
 		'.dot.tmp'
-	].forEach(function(path) {
-		fs.writeFileSync(path, '');
-	});
+	].forEach(fs.writeFileSync);
 });
 
 afterEach(function () {
@@ -23,7 +20,7 @@ afterEach(function () {
 		'3.tmp',
 		'4.tmp',
 		'.dot.tmp'
-	].forEach(function(path) {
+	].forEach(function (path) {
 		try {
 			fs.unlinkSync(path);
 		} catch (err) {}
@@ -51,7 +48,7 @@ it('should delete files sync', function () {
 	assert(fs.existsSync('.dot.tmp'));
 });
 
-it('should take account of options (async)', function(cb) {
+it('should take account of options (async)', function (cb) {
 	del(['*.tmp', '!1*'], {dot: true}, function (err) {
 		assert(!err, err);
 		assert(fs.existsSync('1.tmp'));
