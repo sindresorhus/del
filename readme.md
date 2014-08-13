@@ -43,7 +43,7 @@ See supported minimatch [patterns](https://github.com/isaacs/minimatch#usage).
 
 Type: `object`
 
-See the node-glob [options](https://github.com/isaacs/node-glob#properties).
+See the node-glob [options](https://github.com/isaacs/node-glob#options).
 
 #### options.force
 
