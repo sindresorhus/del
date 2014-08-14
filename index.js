@@ -3,6 +3,7 @@ var globby = require('globby');
 var eachAsync = require('each-async');
 var isPathCwd = require('is-path-cwd');
 var isPathInCwd = require('is-path-in-cwd');
+var path = require('path');
 var rimraf = require('rimraf');
 
 function safeCheck(file) {
@@ -34,7 +35,9 @@ module.exports = function (patterns, opts, cb) {
 			if (!force) {
 				safeCheck(el);
 			}
-
+			if(opts.cwd) {
+				el = path.join(opts.cwd, el);
+			}
 			rimraf(el, next);
 		}, cb);
 	});
