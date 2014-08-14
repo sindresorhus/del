@@ -10,7 +10,7 @@ beforeEach(function () {
 		'3.tmp',
 		'4.tmp',
 		'.dot.tmp'
-	].forEach(fs.writeFileSync);
+	].forEach(fs.ensureFileSync);
 });
 
 afterEach(function () {
@@ -20,11 +20,7 @@ afterEach(function () {
 		'3.tmp',
 		'4.tmp',
 		'.dot.tmp'
-	].forEach(function (path) {
-		try {
-			fs.unlinkSync(path);
-		} catch (err) {}
-	});
+	].forEach(fs.removeSync);
 });
 
 it('should delete files async', function (cb) {
@@ -67,4 +63,24 @@ it('should take account of options (sync)', function () {
 	assert(!fs.existsSync('3.tmp'));
 	assert(!fs.existsSync('4.tmp'));
 	assert(!fs.existsSync('.dot.tmp'));
+});
+
+it('cwd option - sync', function () {
+	var f = 'tmp/tmp.txt';
+	fs.ensureFileSync(f);
+	del.sync('tmp.txt', {cwd: 'tmp'});
+	assert(!fs.existsSync(f));
+	fs.remove(f);
+});
+
+it('cwd option - async', function (cb) {
+	var f = 'tmp/tmp.txt';
+	fs.ensureFileSync(f);
+
+	del('tmp.txt', {cwd: 'tmp'}, function (err) {
+		assert(!err, err);
+		assert(!fs.existsSync(f));
+		fs.remove(f);
+		cb();
+	});
 });

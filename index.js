@@ -1,4 +1,5 @@
 'use strict';
+var path = require('path');
 var globby = require('globby');
 var eachAsync = require('each-async');
 var isPathCwd = require('is-path-cwd');
@@ -35,6 +36,10 @@ module.exports = function (patterns, opts, cb) {
 				safeCheck(el);
 			}
 
+			if (opts.cwd) {
+				el = path.resolve(opts.cwd, el);
+			}
+
 			rimraf(el, next);
 		}, cb);
 	});
@@ -49,6 +54,10 @@ module.exports.sync = function (patterns, opts) {
 	globby.sync(patterns, opts).forEach(function (el) {
 		if (!force) {
 			safeCheck(el);
+		}
+
+		if (opts.cwd) {
+			el = path.resolve(opts.cwd, el);
 		}
 
 		rimraf.sync(el);
