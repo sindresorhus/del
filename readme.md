@@ -26,8 +26,8 @@ del(['tmp/*.js', '!tmp/unicorn.js'], function (err) {
 
 ## API
 
-### del(patterns, [options], callback)
-### del.sync(patterns, [options])
+### del(patterns, {options}, callback)
+### del.sync(patterns, {options})
 
 #### patterns
 
