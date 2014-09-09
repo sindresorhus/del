@@ -84,3 +84,9 @@ it('cwd option - async', function (cb) {
 		cb();
 	});
 });
+
+it('calling it without callback should not throw', function () {
+	assert.doesNotThrow(function () {
+		del('tmp');
+	});
+});

@@ -17,7 +17,7 @@ function safeCheck(file) {
 }
 
 module.exports = function (patterns, opts, cb) {
-	if (typeof opts === 'function') {
+	if (typeof opts !== 'object') {
 		cb = opts;
 		opts = {};
 	}
