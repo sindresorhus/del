@@ -18,8 +18,8 @@ $ npm install --save del
 ```js
 var del = require('del');
 
-del(['tmp/*.js', '!tmp/unicorn.js'], function (err) {
-	console.log('Files deleted');
+del(['tmp/*.js', '!tmp/unicorn.js'], function (err, deletedFiles) {
+	console.log('Files deleted:', deletedFiles.join(', '));
 });
 ```
 
@@ -28,6 +28,8 @@ del(['tmp/*.js', '!tmp/unicorn.js'], function (err) {
 
 ### del(patterns, [options], callback)
 ### del.sync(patterns, [options])
+
+The async method gets an array of deleted files as the second argument in the callback, while the sync method returns the array.
 
 #### patterns
 

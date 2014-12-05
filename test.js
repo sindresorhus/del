@@ -23,7 +23,7 @@ afterEach(function () {
 	].forEach(fs.removeSync);
 });
 
-it('should delete files async', function (cb) {
+it('should delete files - async', function (cb) {
 	del(['*.tmp', '!1*'], function (err) {
 		assert(!err, err);
 		assert(fs.existsSync('1.tmp'));
@@ -35,7 +35,7 @@ it('should delete files async', function (cb) {
 	});
 });
 
-it('should delete files sync', function () {
+it('should delete files - sync', function () {
 	del.sync(['*.tmp', '!1*']);
 	assert(fs.existsSync('1.tmp'));
 	assert(!fs.existsSync('2.tmp'));
@@ -44,7 +44,7 @@ it('should delete files sync', function () {
 	assert(fs.existsSync('.dot.tmp'));
 });
 
-it('should take account of options (async)', function (cb) {
+it('should take account of options - async', function (cb) {
 	del(['*.tmp', '!1*'], {dot: true}, function (err) {
 		assert(!err, err);
 		assert(fs.existsSync('1.tmp'));
@@ -56,7 +56,7 @@ it('should take account of options (async)', function (cb) {
 	});
 });
 
-it('should take account of options (sync)', function () {
+it('should take account of options - sync', function () {
 	del.sync(['*.tmp', '!1*'], {dot: true});
 	assert(fs.existsSync('1.tmp'));
 	assert(!fs.existsSync('2.tmp'));
@@ -88,5 +88,17 @@ it('cwd option - async', function (cb) {
 it('calling it without callback should not throw', function () {
 	assert.doesNotThrow(function () {
 		del('tmp');
+	});
+});
+
+it('return deleted files - sync', function () {
+	assert(/1\.tmp$/.test(del.sync('1.tmp')[0]));
+});
+
+it('return deleted files - async', function (cb) {
+	del('1.tmp', function (err, deletedFiles) {
+		assert(!err, err);
+		assert(/1\.tmp$/.test(deletedFiles[0]));
+		cb();
 	});
 });

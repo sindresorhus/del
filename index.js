@@ -22,8 +22,12 @@ module.exports = function (patterns, opts, cb) {
 		opts = {};
 	}
 
+	cb = cb || function () {};
+
 	var force = opts.force;
 	delete opts.force;
+
+	var deletedFiles = [];
 
 	globby(patterns, opts, function (err, files) {
 		if (err) {
@@ -36,12 +40,17 @@ module.exports = function (patterns, opts, cb) {
 				safeCheck(el);
 			}
 
-			if (opts.cwd) {
-				el = path.resolve(opts.cwd, el);
+			el = path.resolve(opts.cwd || '', el);
+			deletedFiles.push(el);
+			rimraf(el, next);
+		}, function (err) {
+			if (err) {
+				cb(err);
+				return;
 			}
 
-			rimraf(el, next);
-		}, cb);
+			cb(null, deletedFiles);
+		});
 	});
 };
 
@@ -51,15 +60,17 @@ module.exports.sync = function (patterns, opts) {
 	var force = opts.force;
 	delete opts.force;
 
+	var deletedFiles = [];
+
 	globby.sync(patterns, opts).forEach(function (el) {
 		if (!force) {
 			safeCheck(el);
 		}
 
-		if (opts.cwd) {
-			el = path.resolve(opts.cwd, el);
-		}
-
+		el = path.resolve(opts.cwd || '', el);
+		deletedFiles.push(el);
 		rimraf.sync(el);
 	});
+
+	return deletedFiles;
 };
