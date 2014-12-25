@@ -5,6 +5,7 @@ var eachAsync = require('each-async');
 var isPathCwd = require('is-path-cwd');
 var isPathInCwd = require('is-path-in-cwd');
 var rimraf = require('rimraf');
+var objectAssign = require('object-assign');
 
 function safeCheck(file) {
 	if (isPathCwd(file)) {
@@ -22,6 +23,7 @@ module.exports = function (patterns, opts, cb) {
 		opts = {};
 	}
 
+	opts = objectAssign({}, opts);
 	cb = cb || function () {};
 
 	var force = opts.force;
@@ -55,7 +57,7 @@ module.exports = function (patterns, opts, cb) {
 };
 
 module.exports.sync = function (patterns, opts) {
-	opts = opts || {};
+	opts = objectAssign({}, opts);
 
 	var force = opts.force;
 	delete opts.force;
