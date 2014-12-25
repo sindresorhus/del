@@ -1,6 +1,6 @@
 {
   "name": "del",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Delete files/folders using globs",
   "license": "MIT",
   "repository": "sindresorhus/del",
