@@ -102,3 +102,8 @@ it('return deleted files - async', function (cb) {
 		cb();
 	});
 });
+
+it('options are optional', function (cb) {
+	del.sync('1.tmp');
+	del('1.tmp', cb);
+});
