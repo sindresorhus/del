@@ -57,7 +57,7 @@ Allow deleting the current working directory and files/folders outside it.
 
 ## CLI
 
-See [trash](https://github.com/sindresorhus/trash).
+del doesn't offer usage via the CLI.  Instead, see [trash](https://github.com/sindresorhus/trash).
 
 
 ## License
