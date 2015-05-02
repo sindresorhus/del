@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "fs-extra": "^0.12.0",
-    "mocha": "*"
+    "mocha": "*",
+    "path-exists": "^1.0.0"
   }
 }
