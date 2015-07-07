@@ -108,3 +108,37 @@ it('options are optional', function (cb) {
 	del.sync('1.tmp');
 	del('1.tmp', cb);
 });
+
+describe('With nested directories', function() {
+	beforeEach(function() {
+		[
+			'tmpDir/5.tmp',
+			'tmpDir/6.tmp',
+			'tmpDir/anotherDir/7.tmp',
+			'tmpDir/anotherDir/8.tmp'
+		].forEach(fs.ensureFileSync);
+	});
+
+	afterEach(function() {
+		[
+			'tmpDir/5.tmp',
+			'tmpDir/6.tmp',
+			'tmpDir/',
+			'tmpDir/anotherDir/7.tmp',
+			'tmpDir/anotherDir/8.tmp',
+			'tmpDir/anotherDir/'
+		].forEach(fs.removeSync);
+
+	});
+
+	it('should not delete negated file', function(cb) {
+		del(['tmpDir/**/*', '!tmpDir/anotherDir/8.tmp'], function() {
+			assert(!pathExists.sync('tmpDir/5.tmp'));
+			assert(!pathExists.sync('tmpDir/6.tmp'));
+			assert(!pathExists.sync('tmpDir/anotherDir/7.tmp'));
+			assert(pathExists.sync('tmpDir/anotherDir/8.tmp'));
+			fileList
+			cb();
+		});
+	});
+});
