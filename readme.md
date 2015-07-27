@@ -24,6 +24,23 @@ del(['tmp/*.js', '!tmp/unicorn.js'], function (err, paths) {
 ```
 
 
+## Beware
+
+The glob pattern `**` matches all children and *the parent*.
+
+So this won't work:
+
+```js
+del.sync(['public/assets/**', '!public/assets/goat.png']);
+```
+
+You have to explicitly ignore the parent directories too:
+
+```js
+del.sync(['public/assets/**', '!public/assets', '!public/assets/goat.png']);
+```
+
+
 ## API
 
 ### del(patterns, [options], callback)
