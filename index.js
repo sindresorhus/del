@@ -1,11 +1,14 @@
 'use strict';
+var Promise = require('pinkie-promise');
 var path = require('path');
 var globby = require('globby');
 var eachAsync = require('each-async');
 var isPathCwd = require('is-path-cwd');
 var isPathInCwd = require('is-path-in-cwd');
-var rimraf = require('rimraf');
 var objectAssign = require('object-assign');
+var pify = require('pify');
+var rimraf = require('rimraf');
+var rimrafP = pify(rimraf, Promise);
 
 function safeCheck(file) {
 	if (isPathCwd(file)) {
@@ -17,41 +20,29 @@ function safeCheck(file) {
 	}
 }
 
-module.exports = function (patterns, opts, cb) {
+module.exports = function (patterns, opts) {
 	if (typeof opts !== 'object') {
-		cb = opts;
 		opts = {};
 	}
 
 	opts = objectAssign({}, opts);
-	cb = cb || function () {};
 
 	var force = opts.force;
 	delete opts.force;
 
 	var deletedFiles = [];
 
-	globby(patterns, opts, function (err, files) {
-		if (err) {
-			cb(err);
-			return;
-		}
-
-		eachAsync(files, function (el, i, next) {
+	return globby(patterns, opts).then(function (files) {
+		return Promise.all(files.map(function (el) {
 			if (!force) {
 				safeCheck(el);
 			}
 
 			el = path.resolve(opts.cwd || '', el);
 			deletedFiles.push(el);
-			rimraf(el, next);
-		}, function (err) {
-			if (err) {
-				cb(err);
-				return;
-			}
-
-			cb(null, deletedFiles);
+			return rimrafP(el);
+		})).then(function () {
+			return deletedFiles;
 		});
 	});
 };

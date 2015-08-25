@@ -2,7 +2,7 @@
 
 > Delete files/folders using [globs](https://github.com/isaacs/minimatch#usage)
 
-Pretty much [rimraf](https://github.com/isaacs/rimraf) with support for multiple files and globbing.  
+Pretty much [rimraf](https://github.com/isaacs/rimraf) with a Promise API and support for multiple files and globbing.  
 It also protects you against deleting the current working directory and above.
 
 
@@ -18,7 +18,7 @@ $ npm install --save del
 ```js
 var del = require('del');
 
-del(['tmp/*.js', '!tmp/unicorn.js'], function (err, paths) {
+del(['tmp/*.js', '!tmp/unicorn.js']).then(function (paths) {
 	console.log('Deleted files/folders:\n', paths.join('\n'));
 });
 ```
@@ -43,10 +43,13 @@ del.sync(['public/assets/**', '!public/assets', '!public/assets/goat.png']);
 
 ## API
 
-### del(patterns, [options], callback)
+### del(patterns, [options])
+
+Returns a promise that resolves to an array of the deleted paths.
+
 ### del.sync(patterns, [options])
 
-The async method gets an array of deleted paths as the second argument in the callback, while the sync method returns the array.
+Returns an array of deleted paths.
 
 #### patterns
 
