@@ -17,7 +17,7 @@ $ npm install --save del
 ```js
 var del = require('del');
 
-del(['tmp/*.js', '!tmp/unicorn.js']).then(paths => {
+del(['tmp/*.js', '!tmp/unicorn.js']).then(function (paths) {
 	console.log('Deleted files/folders:\n', paths.join('\n'));
 });
 ```
