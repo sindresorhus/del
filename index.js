@@ -1,11 +1,10 @@
 'use strict';
-var Promise = require('pinkie-promise');
 var path = require('path');
 var globby = require('globby');
-var eachAsync = require('each-async');
 var isPathCwd = require('is-path-cwd');
 var isPathInCwd = require('is-path-in-cwd');
 var objectAssign = require('object-assign');
+var Promise = require('pinkie-promise');
 var pify = require('pify');
 var rimraf = require('rimraf');
 var rimrafP = pify(rimraf, Promise);
@@ -21,28 +20,24 @@ function safeCheck(file) {
 }
 
 module.exports = function (patterns, opts) {
-	if (typeof opts !== 'object') {
-		opts = {};
-	}
-
 	opts = objectAssign({}, opts);
 
 	var force = opts.force;
 	delete opts.force;
 
-	var deletedFiles = [];
-
 	return globby(patterns, opts).then(function (files) {
-		return Promise.all(files.map(function (el) {
+		return Promise.all(files.map(function (x) {
 			if (!force) {
-				safeCheck(el);
+				safeCheck(x);
 			}
 
-			el = path.resolve(opts.cwd || '', el);
-			deletedFiles.push(el);
-			return rimrafP(el);
-		})).then(function () {
-			return deletedFiles;
+			x = path.resolve(opts.cwd || '', x);
+
+			return rimrafP(x).then(function () {
+				return files;
+			});
+		})).then(function (args) {
+			return args[0];
 		});
 	});
 };
@@ -53,17 +48,14 @@ module.exports.sync = function (patterns, opts) {
 	var force = opts.force;
 	delete opts.force;
 
-	var deletedFiles = [];
-
-	globby.sync(patterns, opts).forEach(function (el) {
+	return globby.sync(patterns, opts).map(function (x) {
 		if (!force) {
-			safeCheck(el);
+			safeCheck(x);
 		}
 
-		el = path.resolve(opts.cwd || '', el);
-		deletedFiles.push(el);
-		rimraf.sync(el);
-	});
+		x = path.resolve(opts.cwd || '', x);
+		rimraf.sync(x);
 
-	return deletedFiles;
+		return x;
+	});
 };

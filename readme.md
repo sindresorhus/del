@@ -2,13 +2,12 @@
 
 > Delete files/folders using [globs](https://github.com/isaacs/minimatch#usage)
 
-Pretty much [rimraf](https://github.com/isaacs/rimraf) with a Promise API and support for multiple files and globbing.  
-It also protects you against deleting the current working directory and above.
+Pretty much [rimraf](https://github.com/isaacs/rimraf) with a Promise API and support for multiple files and globbing. It also protects you against deleting the current working directory and above.
 
 
 ## Install
 
-```sh
+```
 $ npm install --save del
 ```
 
@@ -18,7 +17,7 @@ $ npm install --save del
 ```js
 var del = require('del');
 
-del(['tmp/*.js', '!tmp/unicorn.js']).then(function (paths) {
+del(['tmp/*.js', '!tmp/unicorn.js']).then(paths => {
 	console.log('Deleted files/folders:\n', paths.join('\n'));
 });
 ```
@@ -40,12 +39,14 @@ You have to explicitly ignore the parent directories too:
 del.sync(['public/assets/**', '!public/assets', '!public/assets/goat.png']);
 ```
 
+Suggestions on how to improve this welcome!
+
 
 ## API
 
 ### del(patterns, [options])
 
-Returns a promise that resolves to an array of the deleted paths.
+Returns a promise that resolves to an array of deleted paths.
 
 ### del.sync(patterns, [options])
 
@@ -53,7 +54,6 @@ Returns an array of deleted paths.
 
 #### patterns
 
-**Required**  
 Type: `string`, `array`
 
 See supported minimatch [patterns](https://github.com/isaacs/minimatch#usage).
@@ -65,7 +65,7 @@ See supported minimatch [patterns](https://github.com/isaacs/minimatch#usage).
 
 Type: `object`
 
-See the node-glob [options](https://github.com/isaacs/node-glob#options).
+See the `node-glob` [options](https://github.com/isaacs/node-glob#options).
 
 #### options.force
 

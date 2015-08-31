@@ -4,24 +4,20 @@ var fs = require('fs-extra');
 var pathExists = require('path-exists');
 var del = require('./');
 
+var fixtures = [
+	'1.tmp',
+	'2.tmp',
+	'3.tmp',
+	'4.tmp',
+	'.dot.tmp'
+];
+
 beforeEach(function () {
-	[
-		'1.tmp',
-		'2.tmp',
-		'3.tmp',
-		'4.tmp',
-		'.dot.tmp'
-	].forEach(fs.ensureFileSync);
+	fixtures.forEach(fs.ensureFileSync);
 });
 
 afterEach(function () {
-	[
-		'1.tmp',
-		'2.tmp',
-		'3.tmp',
-		'4.tmp',
-		'.dot.tmp'
-	].forEach(fs.removeSync);
+	fixtures.forEach(fs.removeSync);
 });
 
 it('should delete files - async', function () {
@@ -80,18 +76,12 @@ it('cwd option - async', function () {
 	});
 });
 
-it('calling it without callback should not throw', function () {
-	assert.doesNotThrow(function () {
-		del('tmp');
-	});
-});
-
 it('return deleted files - sync', function () {
 	assert(/1\.tmp$/.test(del.sync('1.tmp')[0]));
 });
 
 it('return deleted files - async', function () {
-	return del('1.tmp', function (deletedFiles) {
+	return del('1.tmp').then(function (deletedFiles) {
 		assert(/1\.tmp$/.test(deletedFiles[0]));
 	});
 });
