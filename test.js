@@ -24,15 +24,13 @@ afterEach(function () {
 	].forEach(fs.removeSync);
 });
 
-it('should delete files - async', function (cb) {
-	del(['*.tmp', '!1*'], function (err) {
-		assert(!err, err);
+it('should delete files - async', function () {
+	return del(['*.tmp', '!1*']).then(function () {
 		assert(pathExists.sync('1.tmp'));
 		assert(!pathExists.sync('2.tmp'));
 		assert(!pathExists.sync('3.tmp'));
 		assert(!pathExists.sync('4.tmp'));
 		assert(pathExists.sync('.dot.tmp'));
-		cb();
 	});
 });
 
@@ -45,15 +43,13 @@ it('should delete files - sync', function () {
 	assert(pathExists.sync('.dot.tmp'));
 });
 
-it('should take account of options - async', function (cb) {
-	del(['*.tmp', '!1*'], {dot: true}, function (err) {
-		assert(!err, err);
+it('should take account of options - async', function () {
+	return del(['*.tmp', '!1*'], {dot: true}).then(function () {
 		assert(pathExists.sync('1.tmp'));
 		assert(!pathExists.sync('2.tmp'));
 		assert(!pathExists.sync('3.tmp'));
 		assert(!pathExists.sync('4.tmp'));
 		assert(!pathExists.sync('.dot.tmp'));
-		cb();
 	});
 });
 
@@ -74,15 +70,13 @@ it('cwd option - sync', function () {
 	fs.remove(f);
 });
 
-it('cwd option - async', function (cb) {
+it('cwd option - async', function () {
 	var f = 'tmp/tmp.txt';
 	fs.ensureFileSync(f);
 
-	del('tmp.txt', {cwd: 'tmp'}, function (err) {
-		assert(!err, err);
+	return del('tmp.txt', {cwd: 'tmp'}).then(function () {
 		assert(!pathExists.sync(f));
 		fs.remove(f);
-		cb();
 	});
 });
 
@@ -96,15 +90,13 @@ it('return deleted files - sync', function () {
 	assert(/1\.tmp$/.test(del.sync('1.tmp')[0]));
 });
 
-it('return deleted files - async', function (cb) {
-	del('1.tmp', function (err, deletedFiles) {
-		assert(!err, err);
+it('return deleted files - async', function () {
+	return del('1.tmp', function (deletedFiles) {
 		assert(/1\.tmp$/.test(deletedFiles[0]));
-		cb();
 	});
 });
 
-it('options are optional', function (cb) {
+it('options are optional', function () {
 	del.sync('1.tmp');
-	del('1.tmp', cb);
+	return del('1.tmp');
 });
