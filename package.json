@@ -47,14 +47,14 @@
     "is-path-cwd": "^1.0.0",
     "is-path-in-cwd": "^1.0.0",
     "object-assign": "^4.0.1",
-    "pify": "^1.0.0",
+    "pify": "^2.0.0",
     "pinkie-promise": "^1.0.0",
     "rimraf": "^2.2.8"
   },
   "devDependencies": {
-    "fs-extra": "^0.23.1",
+    "fs-extra": "^0.24.0",
     "mocha": "*",
-    "path-exists": "^1.0.0",
+    "path-exists": "^2.0.0",
     "xo": "*"
   },
   "xo": {
