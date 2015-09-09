@@ -26,14 +26,14 @@ module.exports = function (patterns, opts) {
 	delete opts.force;
 
 	return globby(patterns, opts).then(function (files) {
-		return Promise.all(files.map(function (x) {
+		return Promise.all(files.map(function (file) {
 			if (!force) {
-				safeCheck(x);
+				safeCheck(file);
 			}
 
-			x = path.resolve(opts.cwd || '', x);
+			file = path.resolve(opts.cwd || '', file);
 
-			return rimrafP(x).then(function () {
+			return rimrafP(file).then(function () {
 				return files;
 			});
 		})).then(function (args) {
@@ -48,14 +48,14 @@ module.exports.sync = function (patterns, opts) {
 	var force = opts.force;
 	delete opts.force;
 
-	return globby.sync(patterns, opts).map(function (x) {
+	return globby.sync(patterns, opts).map(function (file) {
 		if (!force) {
-			safeCheck(x);
+			safeCheck(file);
 		}
 
-		x = path.resolve(opts.cwd || '', x);
-		rimraf.sync(x);
+		file = path.resolve(opts.cwd || '', file);
+		rimraf.sync(file);
 
-		return x;
+		return file;
 	});
 };
