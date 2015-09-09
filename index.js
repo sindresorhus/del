@@ -34,11 +34,9 @@ module.exports = function (patterns, opts) {
 			file = path.resolve(opts.cwd || '', file);
 
 			return rimrafP(file).then(function () {
-				return files;
+				return file;
 			});
-		})).then(function (args) {
-			return args[0];
-		});
+		}));
 	});
 };
 

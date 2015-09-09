@@ -1,6 +1,7 @@
 'use strict';
 var assert = require('assert');
 var fs = require('fs-extra');
+var path = require('path');
 var pathExists = require('path-exists');
 var del = require('./');
 
@@ -77,12 +78,14 @@ it('cwd option - async', function () {
 });
 
 it('return deleted files - sync', function () {
-	assert(/1\.tmp$/.test(del.sync('1.tmp')[0]));
+	fs.ensureFileSync('tmp/tmp.txt');
+	assert.deepEqual(del.sync('tmp.txt', {cwd: 'tmp'}), [path.resolve('tmp/tmp.txt')]);
 });
 
 it('return deleted files - async', function () {
-	return del('1.tmp').then(function (deletedFiles) {
-		assert(/1\.tmp$/.test(deletedFiles[0]));
+	fs.ensureFileSync('tmp/tmp.txt');
+	return del('tmp.txt', {cwd: 'tmp'}).then(function (deletedFiles) {
+		assert.deepEqual(deletedFiles, [path.resolve('tmp/tmp.txt')]);
 	});
 });
 
