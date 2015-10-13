@@ -1,6 +1,6 @@
 # del [![Build Status](https://travis-ci.org/sindresorhus/del.svg?branch=master)](https://travis-ci.org/sindresorhus/del)
 
-> Delete files/folders using [globs](https://github.com/isaacs/minimatch#usage)
+> Delete files and folders using [globs](https://github.com/isaacs/minimatch#usage)
 
 Pretty much [rimraf](https://github.com/isaacs/rimraf) with a Promise API and support for multiple files and globbing. It also protects you against deleting the current working directory and above.
 
@@ -15,10 +15,10 @@ $ npm install --save del
 ## Usage
 
 ```js
-var del = require('del');
+const del = require('del');
 
-del(['tmp/*.js', '!tmp/unicorn.js']).then(function (paths) {
-	console.log('Deleted files/folders:\n', paths.join('\n'));
+del(['tmp/*.js', '!tmp/unicorn.js']).then(paths => {
+	console.log('Deleted files and folders:\n', paths.join('\n'));
 });
 ```
 
@@ -46,7 +46,7 @@ Suggestions on how to improve this welcome!
 
 ### del(patterns, [options])
 
-Returns a promise that resolves to an array of deleted paths.
+Returns a promise for an array of deleted paths.
 
 ### del.sync(patterns, [options])
 
@@ -77,7 +77,7 @@ Allow deleting the current working directory and files/folders outside it.
 
 ## CLI
 
-See [trash](https://github.com/sindresorhus/trash).
+See [trash-cli](https://github.com/sindresorhus/trash-cli).
 
 
 ## License
