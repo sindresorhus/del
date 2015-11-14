@@ -43,7 +43,7 @@
     "filesystem"
   ],
   "dependencies": {
-    "globby": "^3.0.0",
+    "globby": "^4.0.0",
     "is-path-cwd": "^1.0.0",
     "is-path-in-cwd": "^1.0.0",
     "object-assign": "^4.0.1",
