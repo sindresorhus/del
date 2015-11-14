@@ -29,21 +29,29 @@ module.exports = function (patterns, opts) {
 	delete opts.dryRun;
 
 	return globby(patterns, opts).then(function (files) {
-		return Promise.all(files.map(function (file) {
+		files = files.map(function (file) {
 			if (!force) {
 				safeCheck(file);
 			}
 
-			file = path.resolve(opts.cwd || '', file);
+			return path.resolve(opts.cwd || '', file);
+		});
 
-			if (dryRun) {
-				return Promise.resolve(file);
-			}
+		var result = Promise.resolve();
 
-			return rimrafP(file).then(function () {
-				return file;
+		files.forEach(function (file) {
+			result = result.then(function () {
+				if (dryRun) {
+					return Promise.resolve(file);
+				}
+
+				return rimrafP(file);
 			});
-		}));
+		});
+
+		return result.then(function () {
+			return files;
+		});
 	});
 };
 
