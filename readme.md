@@ -74,7 +74,7 @@ Default: `false`
 
 Allow deleting the current working directory and files/folders outside it.
 
-#### options.test
+#### options.dryRun
 
 Type: `boolean`  
 Default: `false`
@@ -83,7 +83,7 @@ Just to see which files/folders will be deleted without actual deletion.
 ```js
 const del = require('del');
 
-del(['tmp/*.js', '!tmp/unicorn.js'], {test: true}).then(paths => {
+del(['tmp/*.js', '!tmp/unicorn.js'], {dryRun: true}).then(paths => {
 	console.log('Files and folders that could be deleted:\n', paths.join('\n'));
 });
 ```
