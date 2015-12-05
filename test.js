@@ -89,6 +89,27 @@ it('return deleted files - async', function () {
 	});
 });
 
+it('should not delete files, but return them - async', function () {
+	return del(['*.tmp', '!1*'], {dryRun: true}).then(function (deletedFiles) {
+		assert(pathExists.sync('1.tmp'));
+		assert(pathExists.sync('2.tmp'));
+		assert(pathExists.sync('3.tmp'));
+		assert(pathExists.sync('4.tmp'));
+		assert(pathExists.sync('.dot.tmp'));
+		assert.deepEqual(deletedFiles, [path.resolve('2.tmp'), path.resolve('3.tmp'), path.resolve('4.tmp')]);
+	});
+});
+
+it('should not delete files, but return them - sync', function () {
+	del.sync(['*.tmp', '!1*'], {dryRun: true});
+	assert(pathExists.sync('1.tmp'));
+	assert(pathExists.sync('2.tmp'));
+	assert(pathExists.sync('3.tmp'));
+	assert(pathExists.sync('4.tmp'));
+	assert(pathExists.sync('.dot.tmp'));
+	assert.deepEqual(deletedFiles, [path.resolve('2.tmp'), path.resolve('3.tmp'), path.resolve('4.tmp')]);
+});
+
 it('options are optional', function () {
 	del.sync('1.tmp');
 	return del('1.tmp');
