@@ -25,8 +25,8 @@ module.exports = function (patterns, opts) {
 	var force = opts.force;
 	delete opts.force;
 
-	var test = opts.test;
-	delete opts.test;
+	var dryRun = opts.dryRun;
+	delete opts.dryRun;
 
 	return globby(patterns, opts).then(function (files) {
 		return Promise.all(files.map(function (file) {
@@ -36,7 +36,7 @@ module.exports = function (patterns, opts) {
 
 			file = path.resolve(opts.cwd || '', file);
 
-			if (test) {
+			if (dryRun) {
 				return Promise.resolve(file);
 			}
 
@@ -53,8 +53,8 @@ module.exports.sync = function (patterns, opts) {
 	var force = opts.force;
 	delete opts.force;
 
-	var test = opts.test;
-	delete opts.test;
+	var dryRun = opts.dryRun;
+	delete opts.dryRun;
 
 	return globby.sync(patterns, opts).map(function (file) {
 		if (!force) {
@@ -63,7 +63,7 @@ module.exports.sync = function (patterns, opts) {
 
 		file = path.resolve(opts.cwd || '', file);
 
-		if (!test) {
+		if (!dryRun) {
 			rimraf.sync(file);
 		}
 
