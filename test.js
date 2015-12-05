@@ -101,7 +101,7 @@ it('should not delete files, but return them - async', function () {
 });
 
 it('should not delete files, but return them - sync', function () {
-	del.sync(['*.tmp', '!1*'], {dryRun: true});
+	var deletedFiles = del.sync(['*.tmp', '!1*'], {dryRun: true});
 	assert(pathExists.sync('1.tmp'));
 	assert(pathExists.sync('2.tmp'));
 	assert(pathExists.sync('3.tmp'));
