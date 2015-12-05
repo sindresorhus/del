@@ -36,7 +36,7 @@ module.exports = function (patterns, opts) {
 
 			file = path.resolve(opts.cwd || '', file);
 
-			if(test) {
+			if (test) {
 				return Promise.resolve(file);
 			}
 
@@ -62,7 +62,8 @@ module.exports.sync = function (patterns, opts) {
 		}
 
 		file = path.resolve(opts.cwd || '', file);
-		if(!test) {
+
+		if (!test) {
 			rimraf.sync(file);
 		}
 
