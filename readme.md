@@ -67,24 +67,25 @@ Type: `object`
 
 See the `node-glob` [options](https://github.com/isaacs/node-glob#options).
 
-#### options.force
+##### force
 
 Type: `boolean`  
 Default: `false`
 
 Allow deleting the current working directory and files/folders outside it.
 
-#### options.dryRun
+##### dryRun
 
 Type: `boolean`  
 Default: `false`
 
-Just to see which files/folders will be deleted without actual deletion.
+See what would be deleted.
+
 ```js
 const del = require('del');
 
-del(['tmp/*.js', '!tmp/unicorn.js'], {dryRun: true}).then(paths => {
-	console.log('Files and folders that could be deleted:\n', paths.join('\n'));
+del(['tmp/*.js'], {dryRun: true}).then(paths => {
+	console.log('Files and folders that would be deleted:\n', paths.join('\n'));
 });
 ```
 
