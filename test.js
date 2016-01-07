@@ -1,11 +1,10 @@
-'use strict';
-var assert = require('assert');
-var fs = require('fs-extra');
-var path = require('path');
-var pathExists = require('path-exists');
-var del = require('./');
+import fs from 'fs-extra';
+import path from 'path';
+import pathExists from 'path-exists';
+import test from 'ava';
+import fn from './';
 
-var fixtures = [
+const fixtures = [
 	'1.tmp',
 	'2.tmp',
 	'3.tmp',
@@ -13,104 +12,92 @@ var fixtures = [
 	'.dot.tmp'
 ];
 
-beforeEach(function () {
-	fixtures.forEach(fs.ensureFileSync);
+test.beforeEach(() => fixtures.forEach(fs.ensureFileSync));
+test.afterEach(() => fixtures.forEach(fs.removeSync));
+
+test.serial('delete files - async', async t => {
+	await fn(['*.tmp', '!1*']);
+	t.true(pathExists.sync('1.tmp'));
+	t.false(pathExists.sync('2.tmp'));
+	t.false(pathExists.sync('3.tmp'));
+	t.false(pathExists.sync('4.tmp'));
+	t.true(pathExists.sync('.dot.tmp'));
 });
 
-afterEach(function () {
-	fixtures.forEach(fs.removeSync);
+test.serial('delete files - sync', t => {
+	fn.sync(['*.tmp', '!1*']);
+	t.true(pathExists.sync('1.tmp'));
+	t.false(pathExists.sync('2.tmp'));
+	t.false(pathExists.sync('3.tmp'));
+	t.false(pathExists.sync('4.tmp'));
+	t.true(pathExists.sync('.dot.tmp'));
 });
 
-it('should delete files - async', function () {
-	return del(['*.tmp', '!1*']).then(function () {
-		assert(pathExists.sync('1.tmp'));
-		assert(!pathExists.sync('2.tmp'));
-		assert(!pathExists.sync('3.tmp'));
-		assert(!pathExists.sync('4.tmp'));
-		assert(pathExists.sync('.dot.tmp'));
-	});
+test.serial('take options into account - async', async t => {
+	await fn(['*.tmp', '!1*'], {dot: true});
+	t.true(pathExists.sync('1.tmp'));
+	t.false(pathExists.sync('2.tmp'));
+	t.false(pathExists.sync('3.tmp'));
+	t.false(pathExists.sync('4.tmp'));
+	t.false(pathExists.sync('.dot.tmp'));
 });
 
-it('should delete files - sync', function () {
-	del.sync(['*.tmp', '!1*']);
-	assert(pathExists.sync('1.tmp'));
-	assert(!pathExists.sync('2.tmp'));
-	assert(!pathExists.sync('3.tmp'));
-	assert(!pathExists.sync('4.tmp'));
-	assert(pathExists.sync('.dot.tmp'));
+test.serial('take options into account - sync', t => {
+	fn.sync(['*.tmp', '!1*'], {dot: true});
+	t.true(pathExists.sync('1.tmp'));
+	t.false(pathExists.sync('2.tmp'));
+	t.false(pathExists.sync('3.tmp'));
+	t.false(pathExists.sync('4.tmp'));
+	t.false(pathExists.sync('.dot.tmp'));
 });
 
-it('should take account of options - async', function () {
-	return del(['*.tmp', '!1*'], {dot: true}).then(function () {
-		assert(pathExists.sync('1.tmp'));
-		assert(!pathExists.sync('2.tmp'));
-		assert(!pathExists.sync('3.tmp'));
-		assert(!pathExists.sync('4.tmp'));
-		assert(!pathExists.sync('.dot.tmp'));
-	});
-});
-
-it('should take account of options - sync', function () {
-	del.sync(['*.tmp', '!1*'], {dot: true});
-	assert(pathExists.sync('1.tmp'));
-	assert(!pathExists.sync('2.tmp'));
-	assert(!pathExists.sync('3.tmp'));
-	assert(!pathExists.sync('4.tmp'));
-	assert(!pathExists.sync('.dot.tmp'));
-});
-
-it('cwd option - sync', function () {
-	var f = 'tmp/tmp.txt';
+test.serial('cwd option - sync', t => {
+	const f = 'tmp/tmp.txt';
 	fs.ensureFileSync(f);
-	del.sync('tmp.txt', {cwd: 'tmp'});
-	assert(!pathExists.sync(f));
-	fs.remove(f);
+	fn.sync('tmp.txt', {cwd: 'tmp'});
+	t.false(pathExists.sync(f));
+	fs.removeSync(f);
 });
 
-it('cwd option - async', function () {
-	var f = 'tmp/tmp.txt';
+test.serial('cwd option - async', async t => {
+	const f = 'tmp/tmp.txt';
 	fs.ensureFileSync(f);
-
-	return del('tmp.txt', {cwd: 'tmp'}).then(function () {
-		assert(!pathExists.sync(f));
-		fs.remove(f);
-	});
+	await fn('tmp.txt', {cwd: 'tmp'});
+	t.false(pathExists.sync(f));
+	fs.removeSync(f);
 });
 
-it('return deleted files - sync', function () {
+test.serial('return deleted files - sync', t => {
 	fs.ensureFileSync('tmp/tmp.txt');
-	assert.deepEqual(del.sync('tmp.txt', {cwd: 'tmp'}), [path.resolve('tmp/tmp.txt')]);
+	t.same(fn.sync('tmp.txt', {cwd: 'tmp'}), [path.resolve('tmp/tmp.txt')]);
 });
 
-it('return deleted files - async', function () {
+test.serial('return deleted files - async', async t => {
 	fs.ensureFileSync('tmp/tmp.txt');
-	return del('tmp.txt', {cwd: 'tmp'}).then(function (deletedFiles) {
-		assert.deepEqual(deletedFiles, [path.resolve('tmp/tmp.txt')]);
-	});
+	t.same(await fn('tmp.txt', {cwd: 'tmp'}), [path.resolve('tmp/tmp.txt')]);
 });
 
-it('should not delete files, but return them - async', function () {
-	return del(['*.tmp', '!1*'], {dryRun: true}).then(function (deletedFiles) {
-		assert(pathExists.sync('1.tmp'));
-		assert(pathExists.sync('2.tmp'));
-		assert(pathExists.sync('3.tmp'));
-		assert(pathExists.sync('4.tmp'));
-		assert(pathExists.sync('.dot.tmp'));
-		assert.deepEqual(deletedFiles, [path.resolve('2.tmp'), path.resolve('3.tmp'), path.resolve('4.tmp')]);
-	});
+test.serial(`don't delete files, but return them - async`, async t => {
+	const deletedFiles = await fn(['*.tmp', '!1*'], {dryRun: true});
+	t.true(pathExists.sync('1.tmp'));
+	t.true(pathExists.sync('2.tmp'));
+	t.true(pathExists.sync('3.tmp'));
+	t.true(pathExists.sync('4.tmp'));
+	t.true(pathExists.sync('.dot.tmp'));
+	t.same(deletedFiles, [path.resolve('2.tmp'), path.resolve('3.tmp'), path.resolve('4.tmp')]);
 });
 
-it('should not delete files, but return them - sync', function () {
-	var deletedFiles = del.sync(['*.tmp', '!1*'], {dryRun: true});
-	assert(pathExists.sync('1.tmp'));
-	assert(pathExists.sync('2.tmp'));
-	assert(pathExists.sync('3.tmp'));
-	assert(pathExists.sync('4.tmp'));
-	assert(pathExists.sync('.dot.tmp'));
-	assert.deepEqual(deletedFiles, [path.resolve('2.tmp'), path.resolve('3.tmp'), path.resolve('4.tmp')]);
+test.serial(`don't delete files, but return them - sync`, t => {
+	const deletedFiles = fn.sync(['*.tmp', '!1*'], {dryRun: true});
+	t.true(pathExists.sync('1.tmp'));
+	t.true(pathExists.sync('2.tmp'));
+	t.true(pathExists.sync('3.tmp'));
+	t.true(pathExists.sync('4.tmp'));
+	t.true(pathExists.sync('.dot.tmp'));
+	t.same(deletedFiles, [path.resolve('2.tmp'), path.resolve('3.tmp'), path.resolve('4.tmp')]);
 });
 
-it('options are optional', function () {
-	del.sync('1.tmp');
-	return del('1.tmp');
+test.serial('options are optional', async () => {
+	fn.sync('1.tmp');
+	await fn('1.tmp');
 });
