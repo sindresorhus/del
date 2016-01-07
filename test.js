@@ -1,8 +1,19 @@
-import fs from 'fs-extra';
 import path from 'path';
+import fs from 'fs-extra';
 import pathExists from 'path-exists';
 import test from 'ava';
+import tempfile from 'tempfile';
 import fn from './';
+
+const cwd = process.cwd();
+
+function exists(t, files) {
+	[].concat(files).forEach(file => t.true(pathExists.sync(path.join(t.context.tmp, file))));
+}
+
+function notExists(t, files) {
+	[].concat(files).forEach(file => t.false(pathExists.sync(path.join(t.context.tmp, file))));
+}
 
 const fixtures = [
 	'1.tmp',
@@ -12,92 +23,65 @@ const fixtures = [
 	'.dot.tmp'
 ];
 
-test.beforeEach(() => fixtures.forEach(fs.ensureFileSync));
-test.afterEach(() => fixtures.forEach(fs.removeSync));
+test.beforeEach(t => {
+	process.chdir(cwd);
+	t.context.tmp = tempfile();
+	fixtures.forEach(fixture => fs.ensureFileSync(path.join(t.context.tmp, fixture)));
+});
 
-test.serial('delete files - async', async t => {
+test('delete files - async', async t => {
+	process.chdir(t.context.tmp);
 	await fn(['*.tmp', '!1*']);
-	t.true(pathExists.sync('1.tmp'));
-	t.false(pathExists.sync('2.tmp'));
-	t.false(pathExists.sync('3.tmp'));
-	t.false(pathExists.sync('4.tmp'));
-	t.true(pathExists.sync('.dot.tmp'));
+
+	exists(t, ['1.tmp', '.dot.tmp']);
+	notExists(t, ['2.tmp', '3.tmp', '4.tmp']);
 });
 
-test.serial('delete files - sync', t => {
-	fn.sync(['*.tmp', '!1*']);
-	t.true(pathExists.sync('1.tmp'));
-	t.false(pathExists.sync('2.tmp'));
-	t.false(pathExists.sync('3.tmp'));
-	t.false(pathExists.sync('4.tmp'));
-	t.true(pathExists.sync('.dot.tmp'));
+test('delete files - sync', t => {
+	fn.sync(['*.tmp', '!1*'], {cwd: t.context.tmp});
+
+	exists(t, ['1.tmp', '.dot.tmp']);
+	notExists(t, ['2.tmp', '3.tmp', '4.tmp']);
 });
 
-test.serial('take options into account - async', async t => {
-	await fn(['*.tmp', '!1*'], {dot: true});
-	t.true(pathExists.sync('1.tmp'));
-	t.false(pathExists.sync('2.tmp'));
-	t.false(pathExists.sync('3.tmp'));
-	t.false(pathExists.sync('4.tmp'));
-	t.false(pathExists.sync('.dot.tmp'));
+test('take options into account - async', async t => {
+	await fn(['*.tmp', '!1*'], {cwd: t.context.tmp, dot: true});
+
+	exists(t, ['1.tmp']);
+	notExists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test.serial('take options into account - sync', t => {
-	fn.sync(['*.tmp', '!1*'], {dot: true});
-	t.true(pathExists.sync('1.tmp'));
-	t.false(pathExists.sync('2.tmp'));
-	t.false(pathExists.sync('3.tmp'));
-	t.false(pathExists.sync('4.tmp'));
-	t.false(pathExists.sync('.dot.tmp'));
-});
+test('take options into account - sync', t => {
+	fn.sync(['*.tmp', '!1*'], {cwd: t.context.tmp, dot: true});
 
-test.serial('cwd option - sync', t => {
-	const f = 'tmp/tmp.txt';
-	fs.ensureFileSync(f);
-	fn.sync('tmp.txt', {cwd: 'tmp'});
-	t.false(pathExists.sync(f));
-	fs.removeSync(f);
-});
-
-test.serial('cwd option - async', async t => {
-	const f = 'tmp/tmp.txt';
-	fs.ensureFileSync(f);
-	await fn('tmp.txt', {cwd: 'tmp'});
-	t.false(pathExists.sync(f));
-	fs.removeSync(f);
-});
-
-test.serial('return deleted files - sync', t => {
-	fs.ensureFileSync('tmp/tmp.txt');
-	t.same(fn.sync('tmp.txt', {cwd: 'tmp'}), [path.resolve('tmp/tmp.txt')]);
+	exists(t, ['1.tmp']);
+	notExists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
 test.serial('return deleted files - async', async t => {
-	fs.ensureFileSync('tmp/tmp.txt');
-	t.same(await fn('tmp.txt', {cwd: 'tmp'}), [path.resolve('tmp/tmp.txt')]);
+	t.same(await fn('1.tmp', {cwd: t.context.tmp}), [path.join(t.context.tmp, '1.tmp')]);
 });
 
-test.serial(`don't delete files, but return them - async`, async t => {
-	const deletedFiles = await fn(['*.tmp', '!1*'], {dryRun: true});
-	t.true(pathExists.sync('1.tmp'));
-	t.true(pathExists.sync('2.tmp'));
-	t.true(pathExists.sync('3.tmp'));
-	t.true(pathExists.sync('4.tmp'));
-	t.true(pathExists.sync('.dot.tmp'));
-	t.same(deletedFiles, [path.resolve('2.tmp'), path.resolve('3.tmp'), path.resolve('4.tmp')]);
+test('return deleted files - sync', t => {
+	t.same(fn.sync('1.tmp', {cwd: t.context.tmp}), [path.join(t.context.tmp, '1.tmp')]);
 });
 
-test.serial(`don't delete files, but return them - sync`, t => {
-	const deletedFiles = fn.sync(['*.tmp', '!1*'], {dryRun: true});
-	t.true(pathExists.sync('1.tmp'));
-	t.true(pathExists.sync('2.tmp'));
-	t.true(pathExists.sync('3.tmp'));
-	t.true(pathExists.sync('4.tmp'));
-	t.true(pathExists.sync('.dot.tmp'));
-	t.same(deletedFiles, [path.resolve('2.tmp'), path.resolve('3.tmp'), path.resolve('4.tmp')]);
+test(`don't delete files, but return them - async`, async t => {
+	const deletedFiles = await fn(['*.tmp', '!1*'], {cwd: t.context.tmp, dryRun: true});
+	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	t.same(deletedFiles, [
+		path.join(t.context.tmp, '2.tmp'),
+		path.join(t.context.tmp, '3.tmp'),
+		path.join(t.context.tmp, '4.tmp')
+	]);
 });
 
-test.serial('options are optional', async () => {
-	fn.sync('1.tmp');
-	await fn('1.tmp');
+test(`don't delete files, but return them - sync`, t => {
+	const deletedFiles = fn.sync(['*.tmp', '!1*'], {cwd: t.context.tmp, dryRun: true});
+	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	t.same(deletedFiles, [
+		path.join(t.context.tmp, '2.tmp'),
+		path.join(t.context.tmp, '3.tmp'),
+		path.join(t.context.tmp, '4.tmp')
+	]);
 });
