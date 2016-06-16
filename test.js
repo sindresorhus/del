@@ -41,14 +41,20 @@ test('delete files - sync', t => {
 });
 
 test('take options into account - async', async t => {
-	await fn(['*.tmp', '!1*'], {cwd: t.context.tmp, dot: true});
+	await fn(['*.tmp', '!1*'], {
+		cwd: t.context.tmp,
+		dot: true
+	});
 
 	exists(t, ['1.tmp']);
 	notExists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
 test('take options into account - sync', t => {
-	fn.sync(['*.tmp', '!1*'], {cwd: t.context.tmp, dot: true});
+	fn.sync(['*.tmp', '!1*'], {
+		cwd: t.context.tmp,
+		dot: true
+	});
 
 	exists(t, ['1.tmp']);
 	notExists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
@@ -69,7 +75,10 @@ test('return deleted files - sync', t => {
 });
 
 test(`don't delete files, but return them - async`, async t => {
-	const deletedFiles = await fn(['*.tmp', '!1*'], {cwd: t.context.tmp, dryRun: true});
+	const deletedFiles = await fn(['*.tmp', '!1*'], {
+		cwd: t.context.tmp,
+		dryRun: true
+	});
 	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 	t.deepEqual(deletedFiles, [
 		path.join(t.context.tmp, '2.tmp'),
@@ -79,7 +88,10 @@ test(`don't delete files, but return them - async`, async t => {
 });
 
 test(`don't delete files, but return them - sync`, t => {
-	const deletedFiles = fn.sync(['*.tmp', '!1*'], {cwd: t.context.tmp, dryRun: true});
+	const deletedFiles = fn.sync(['*.tmp', '!1*'], {
+		cwd: t.context.tmp,
+		dryRun: true
+	});
 	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 	t.deepEqual(deletedFiles, [
 		path.join(t.context.tmp, '2.tmp'),
