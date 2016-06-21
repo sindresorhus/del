@@ -54,7 +54,7 @@
   "devDependencies": {
     "ava": "*",
     "fs-extra": "^0.30.0",
-    "path-exists": "^3.0.0",
+    "path-exists": "^2.0.0",
     "tempfile": "^1.1.1",
     "xo": "*"
   }
