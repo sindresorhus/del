@@ -43,7 +43,7 @@
     "filesystem"
   ],
   "dependencies": {
-    "globby": "^4.0.0",
+    "globby": "^5.0.0",
     "is-path-cwd": "^1.0.0",
     "is-path-in-cwd": "^1.0.0",
     "object-assign": "^4.0.1",
@@ -53,8 +53,8 @@
   },
   "devDependencies": {
     "ava": "*",
-    "fs-extra": "^0.26.2",
-    "path-exists": "^2.0.0",
+    "fs-extra": "^0.30.0",
+    "path-exists": "^3.0.0",
     "tempfile": "^1.1.1",
     "xo": "*"
   }
