@@ -1,6 +1,6 @@
 {
   "name": "del",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "Delete files and folders",
   "license": "MIT",
   "repository": "sindresorhus/del",
