@@ -16,8 +16,10 @@
     "test": "xo && ava"
   },
   "files": [
-    "index.js"
+    "index.js",
+    "bin.js"
   ],
+  "bin": "./bin.js",
   "keywords": [
     "delete",
     "del",
@@ -46,6 +48,7 @@
     "globby": "^5.0.0",
     "is-path-cwd": "^1.0.0",
     "is-path-in-cwd": "^1.0.0",
+    "meow": "^3.7.0",
     "object-assign": "^4.0.1",
     "pify": "^2.0.0",
     "pinkie-promise": "^2.0.0",
