@@ -1,16 +1,20 @@
 import path from 'path';
-import fs from 'fs-extra';
-import pathExists from 'path-exists';
+import fs from 'fs';
 import test from 'ava';
-import tempfile from 'tempfile';
-import fn from './';
+import tempy from 'tempy';
+import mkdirp from 'mkdirp';
+import m from '.';
 
 function exists(t, files) {
-	[].concat(files).forEach(file => t.true(pathExists.sync(path.join(t.context.tmp, file))));
+	for (const file of files) {
+		t.true(fs.existsSync(path.join(t.context.tmp, file)));
+	}
 }
 
 function notExists(t, files) {
-	[].concat(files).forEach(file => t.false(pathExists.sync(path.join(t.context.tmp, file))));
+	for (const file of files) {
+		t.false(fs.existsSync(path.join(t.context.tmp, file)));
+	}
 }
 
 const fixtures = [
@@ -22,26 +26,29 @@ const fixtures = [
 ];
 
 test.beforeEach(t => {
-	t.context.tmp = tempfile();
-	fixtures.forEach(fixture => fs.ensureFileSync(path.join(t.context.tmp, fixture)));
+	t.context.tmp = tempy.directory();
+
+	for (const fixture of fixtures) {
+		mkdirp.sync(path.join(t.context.tmp, fixture));
+	}
 });
 
 test('delete files - async', async t => {
-	await fn(['*.tmp', '!1*'], {cwd: t.context.tmp});
+	await m(['*.tmp', '!1*'], {cwd: t.context.tmp});
 
 	exists(t, ['1.tmp', '.dot.tmp']);
 	notExists(t, ['2.tmp', '3.tmp', '4.tmp']);
 });
 
 test('delete files - sync', t => {
-	fn.sync(['*.tmp', '!1*'], {cwd: t.context.tmp});
+	m.sync(['*.tmp', '!1*'], {cwd: t.context.tmp});
 
 	exists(t, ['1.tmp', '.dot.tmp']);
 	notExists(t, ['2.tmp', '3.tmp', '4.tmp']);
 });
 
 test('take options into account - async', async t => {
-	await fn(['*.tmp', '!1*'], {
+	await m(['*.tmp', '!1*'], {
 		cwd: t.context.tmp,
 		dot: true
 	});
@@ -51,7 +58,7 @@ test('take options into account - async', async t => {
 });
 
 test('take options into account - sync', t => {
-	fn.sync(['*.tmp', '!1*'], {
+	m.sync(['*.tmp', '!1*'], {
 		cwd: t.context.tmp,
 		dot: true
 	});
@@ -62,20 +69,20 @@ test('take options into account - sync', t => {
 
 test.serial('return deleted files - async', async t => {
 	t.deepEqual(
-		await fn('1.tmp', {cwd: t.context.tmp}),
+		await m('1.tmp', {cwd: t.context.tmp}),
 		[path.join(t.context.tmp, '1.tmp')]
 	);
 });
 
 test('return deleted files - sync', t => {
 	t.deepEqual(
-		fn.sync('1.tmp', {cwd: t.context.tmp}),
+		m.sync('1.tmp', {cwd: t.context.tmp}),
 		[path.join(t.context.tmp, '1.tmp')]
 	);
 });
 
 test(`don't delete files, but return them - async`, async t => {
-	const deletedFiles = await fn(['*.tmp', '!1*'], {
+	const deletedFiles = await m(['*.tmp', '!1*'], {
 		cwd: t.context.tmp,
 		dryRun: true
 	});
@@ -88,7 +95,7 @@ test(`don't delete files, but return them - async`, async t => {
 });
 
 test(`don't delete files, but return them - sync`, t => {
-	const deletedFiles = fn.sync(['*.tmp', '!1*'], {
+	const deletedFiles = m.sync(['*.tmp', '!1*'], {
 		cwd: t.context.tmp,
 		dryRun: true
 	});

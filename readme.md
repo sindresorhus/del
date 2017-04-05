@@ -2,11 +2,12 @@
 
 > Delete files and folders using [globs](https://github.com/isaacs/minimatch#usage)
 
-Pretty much [rimraf](https://github.com/isaacs/rimraf) with a Promise API and support for multiple files and globbing. It also protects you against deleting the current working directory and above.
+Similar to [rimraf](https://github.com/isaacs/rimraf), but with a Promise API and support for multiple files and globbing. It also protects you against deleting the current working directory and above.
 
 ---
 
-<p align="center"><b>🔥 Want to strengthen your core JavaScript skills and master ES6?</b><br>I would personally recommend this awesome <a href="https://ES6.io/friend/AWESOME">ES6 course</a> by Wes Bos.</p>
+<p align="center">🐶</p>
+<p align="center"><b>Support this project and improve your JavaScript skills with this great <a href="https://ES6.io/friend/AWESOME">ES6 course</a> by Wes Bos.</b><br>Try his free <a href="https://javascript30.com/friend/AWESOME">JavaScript 30 course</a> for a taste of what to expect. You might also like his <a href="https://ReactForBeginners.com/friend/AWESOME">React</a> and <a href="https://SublimeTextBook.com/friend/AWESOME">Sublime</a> course.</p>
 
 ---
 
@@ -60,7 +61,7 @@ Returns an array of deleted paths.
 
 #### patterns
 
-Type: `string`, `array`
+Type: `string` `Array`
 
 See supported minimatch [patterns](https://github.com/isaacs/minimatch#usage).
 
@@ -69,20 +70,20 @@ See supported minimatch [patterns](https://github.com/isaacs/minimatch#usage).
 
 #### options
 
-Type: `object`
+Type: `Object`
 
-See the `node-glob` [options](https://github.com/isaacs/node-glob#options).
+See the [`glob` options](https://github.com/isaacs/node-glob#options).
 
 ##### force
 
-Type: `boolean`  
+Type: `boolean`<br>
 Default: `false`
 
 Allow deleting the current working directory and outside.
 
 ##### dryRun
 
-Type: `boolean`  
+Type: `boolean`<br>
 Default: `false`
 
 See what would be deleted.
@@ -103,4 +104,4 @@ See [del-cli](https://github.com/sindresorhus/del-cli) for a CLI for this module
 
 ## License
 
-MIT © [Sindre Sorhus](http://sindresorhus.com)
+MIT © [Sindre Sorhus](https://sindresorhus.com)
