@@ -5,6 +5,7 @@ const isPathCwd = require('is-path-cwd');
 const isPathInCwd = require('is-path-in-cwd');
 const pify = require('pify');
 const rimraf = require('rimraf');
+const pMap = require('p-map');
 
 const rimrafP = pify(rimraf);
 
@@ -27,21 +28,21 @@ module.exports = (patterns, opts) => {
 	const dryRun = opts.dryRun;
 	delete opts.dryRun;
 
-	return globby(patterns, opts).then(files => {
-		return Promise.all(files.map(file => {
-			if (!force) {
-				safeCheck(file);
-			}
+	const mapper = file => {
+		if (!force) {
+			safeCheck(file);
+		}
 
-			file = path.resolve(opts.cwd || '', file);
+		file = path.resolve(opts.cwd || '', file);
 
-			if (dryRun) {
-				return Promise.resolve(file);
-			}
+		if (dryRun) {
+			return file;
+		}
 
-			return rimrafP(file, {glob: false}).then(() => file);
-		}));
-	});
+		return rimrafP(file, {glob: false}).then(() => file);
+	};
+
+	return globby(patterns, opts).then(files => pMap(files, mapper, opts));
 };
 
 module.exports.sync = (patterns, opts) => {
