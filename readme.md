@@ -96,6 +96,14 @@ del(['tmp/*.js'], {dryRun: true}).then(paths => {
 });
 ```
 
+##### concurrency
+
+Type: `number`<br>
+Default: `Infinity`<br>
+Minimum: `1`
+
+Concurrency limit.
+
 
 ## CLI
 
