@@ -41,7 +41,7 @@ module.exports = function (patterns, opts) {
 				return Promise.resolve(file);
 			}
 
-			return rimrafP(file).then(function () {
+			return rimrafP(file, {glob: false}).then(function () {
 				return file;
 			});
 		}));
@@ -65,7 +65,7 @@ module.exports.sync = function (patterns, opts) {
 		file = path.resolve(opts.cwd || '', file);
 
 		if (!dryRun) {
-			rimraf.sync(file);
+			rimraf.sync(file, {glob: false});
 		}
 
 		return file;
