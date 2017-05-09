@@ -102,6 +102,12 @@ del(['tmp/*.js'], {dryRun: true}).then(paths => {
 See [del-cli](https://github.com/sindresorhus/del-cli) for a CLI for this module and [trash-cli](https://github.com/sindresorhus/trash-cli) for a safe version that is suitable for running by hand.
 
 
+## Related
+
+- [make-dir](https://github.com/sindresorhus/make-dir) - Make a directory and its parents if needed
+- [globby](https://github.com/sindresorhus/globby) - User-friendly glob matching
+
+
 ## License
 
 MIT © [Sindre Sorhus](https://sindresorhus.com)
