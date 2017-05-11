@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import test from 'ava';
 import tempy from 'tempy';
-import mkdirp from 'mkdirp';
+import makeDir from 'make-dir';
 import m from '.';
 
 function exists(t, files) {
@@ -29,7 +29,7 @@ test.beforeEach(t => {
 	t.context.tmp = tempy.directory();
 
 	for (const fixture of fixtures) {
-		mkdirp.sync(path.join(t.context.tmp, fixture));
+		makeDir.sync(path.join(t.context.tmp, fixture));
 	}
 });
 
