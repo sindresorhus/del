@@ -45,7 +45,7 @@
 	],
 	"dependencies": {
 		"@types/glob": "^7.1.1",
-		"globby": "^7.1.1",
+		"globby": "^8.0.1",
 		"is-path-cwd": "^2.0.0",
 		"is-path-in-cwd": "^2.0.0",
 		"p-map": "^2.0.0",
