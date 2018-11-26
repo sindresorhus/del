@@ -19,21 +19,19 @@ function safeCheck(file) {
 	}
 }
 
-module.exports = (patterns, opts) => {
-	opts = Object.assign({}, opts);
+module.exports = (patterns, options) => {
+	options = Object.assign({}, options);
 
-	const force = opts.force;
-	delete opts.force;
-
-	const dryRun = opts.dryRun;
-	delete opts.dryRun;
+	const {force, dryRun} = options;
+	delete options.force;
+	delete options.dryRun;
 
 	const mapper = file => {
 		if (!force) {
 			safeCheck(file);
 		}
 
-		file = path.resolve(opts.cwd || '', file);
+		file = path.resolve(options.cwd || '', file);
 
 		if (dryRun) {
 			return file;
@@ -42,24 +40,22 @@ module.exports = (patterns, opts) => {
 		return rimrafP(file, {glob: false}).then(() => file);
 	};
 
-	return globby(patterns, opts).then(files => pMap(files, mapper, opts));
+	return globby(patterns, options).then(files => pMap(files, mapper, options));
 };
 
-module.exports.sync = (patterns, opts) => {
-	opts = Object.assign({}, opts);
+module.exports.sync = (patterns, options) => {
+	options = Object.assign({}, options);
 
-	const force = opts.force;
-	delete opts.force;
+	const {force, dryRun} = options;
+	delete options.force;
+	delete options.dryRun;
 
-	const dryRun = opts.dryRun;
-	delete opts.dryRun;
-
-	return globby.sync(patterns, opts).map(file => {
+	return globby.sync(patterns, options).map(file => {
 		if (!force) {
 			safeCheck(file);
 		}
 
-		file = path.resolve(opts.cwd || '', file);
+		file = path.resolve(options.cwd || '', file);
 
 		if (!dryRun) {
 			rimraf.sync(file, {glob: false});

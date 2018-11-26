@@ -15,7 +15,7 @@ Similar to [rimraf](https://github.com/isaacs/rimraf), but with a Promise API an
 ## Install
 
 ```
-$ npm install --save del
+$ npm install del
 ```
 
 
@@ -24,9 +24,11 @@ $ npm install --save del
 ```js
 const del = require('del');
 
-del(['tmp/*.js', '!tmp/unicorn.js']).then(paths => {
-	console.log('Deleted files and folders:\n', paths.join('\n'));
-});
+(async () => {
+	const deletedPaths = await del(['tmp/*.js', '!tmp/unicorn.js']);
+
+	console.log('Deleted files and folders:\n', deletedPaths.join('\n'));
+})();
 ```
 
 
@@ -61,7 +63,7 @@ Returns an array of deleted paths.
 
 #### patterns
 
-Type: `string` `Array`
+Type: `string` `string[]`
 
 See supported minimatch [patterns](https://github.com/isaacs/minimatch#usage).
 
@@ -91,9 +93,11 @@ See what would be deleted.
 ```js
 const del = require('del');
 
-del(['tmp/*.js'], {dryRun: true}).then(paths => {
+(async () => {
+	const deletedPaths = await del(['tmp/*.js'], {dryRun: true});
+
 	console.log('Files and folders that would be deleted:\n', paths.join('\n'));
-});
+})();
 ```
 
 ##### concurrency
