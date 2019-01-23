@@ -96,7 +96,7 @@ const del = require('del');
 (async () => {
 	const deletedPaths = await del(['tmp/*.js'], {dryRun: true});
 
-	console.log('Files and folders that would be deleted:\n', paths.join('\n'));
+	console.log('Files and folders that would be deleted:\n', deletedPaths.join('\n'));
 })();
 ```
 
