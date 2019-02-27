@@ -11,11 +11,11 @@ const rimrafP = pify(rimraf);
 
 function safeCheck(file) {
 	if (isPathCwd(file)) {
-		throw new Error('Cannot delete the current working directory. Can be overriden with the `force` option.');
+		throw new Error('Cannot delete the current working directory. Can be overridden with the `force` option.');
 	}
 
 	if (!isPathInCwd(file)) {
-		throw new Error('Cannot delete files/folders outside the current working directory. Can be overriden with the `force` option.');
+		throw new Error('Cannot delete files/folders outside the current working directory. Can be overridden with the `force` option.');
 	}
 }
 
