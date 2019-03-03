@@ -15,7 +15,7 @@ interface Options extends Readonly<GlobOptions> {
 	 *
 	 * @example
 	 *
-	 * const del = require('del');
+	 * import del from 'del';
 	 *
 	 * (async () => {
 	 *     const deletedPaths = await del(['tmp/*.js'], {dryRun: true});
