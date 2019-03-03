@@ -19,7 +19,7 @@ function safeCheck(file) {
 	}
 }
 
-module.exports = (patterns, options) => {
+const del = (patterns, options) => {
 	options = Object.assign({}, options);
 
 	const {force, dryRun} = options;
@@ -42,6 +42,9 @@ module.exports = (patterns, options) => {
 
 	return globby(patterns, options).then(files => pMap(files, mapper, options));
 };
+
+module.exports = del;
+module.exports.default = del;
 
 module.exports.sync = (patterns, options) => {
 	options = Object.assign({}, options);
