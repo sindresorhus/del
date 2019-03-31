@@ -44,6 +44,7 @@ const del = (patterns, options) => {
 };
 
 module.exports = del;
+// TODO: Remove this for the next major release
 module.exports.default = del;
 
 module.exports.sync = (patterns, options) => {
