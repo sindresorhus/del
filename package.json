@@ -13,7 +13,7 @@
 		"node": ">=6"
 	},
 	"scripts": {
-		"test": "xo && ava && tsd-check"
+		"test": "xo && ava && tsd"
 	},
 	"files": [
 		"index.js",
@@ -51,13 +51,13 @@
 		"is-path-in-cwd": "^2.0.0",
 		"p-map": "^2.0.0",
 		"pify": "^4.0.1",
-		"rimraf": "^2.6.2"
+		"rimraf": "^2.6.3"
 	},
 	"devDependencies": {
-		"ava": "^1.2.1",
-		"make-dir": "^2.0.0",
+		"ava": "^1.4.1",
+		"make-dir": "^2.1.0",
 		"tempy": "^0.2.1",
-		"tsd-check": "^0.3.0",
+		"tsd": "^0.7.1",
 		"xo": "^0.24.0"
 	}
 }

@@ -1,5 +1,6 @@
-import {expectType} from 'tsd-check';
-import del, {sync as delSync} from '.';
+import {expectType} from 'tsd';
+import del = require('.');
+import {sync as delSync} from '.';
 
 let paths = ['tmp/*.js', '!tmp/unicorn.js'];
 
