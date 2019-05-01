@@ -46,7 +46,6 @@
 		"filesystem"
 	],
 	"dependencies": {
-		"@types/glob": "^7.1.1",
 		"globby": "^6.1.0",
 		"is-path-cwd": "^2.0.0",
 		"is-path-in-cwd": "^2.0.0",
@@ -55,6 +54,7 @@
 		"rimraf": "^2.6.3"
 	},
 	"devDependencies": {
+		"@types/glob": "^7.1.1",
 		"ava": "^1.4.1",
 		"make-dir": "^2.1.0",
 		"tempy": "^0.2.1",
