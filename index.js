@@ -22,7 +22,7 @@ function safeCheck(file) {
 const del = (patterns, options) => {
 	options = Object.assign({}, options);
 
-	const {force, dryRun} = options;
+	const { force, dryRun } = options;
 	delete options.force;
 	delete options.dryRun;
 
@@ -37,10 +37,14 @@ const del = (patterns, options) => {
 			return file;
 		}
 
-		return rimrafP(file, {glob: false}).then(() => file);
+		// do not throw on error, silentely catch it: errors will be filtered below
+		return rimrafP(file, { glob: false }).then(() => file).catch(() => null);
 	};
 
-	return globby(patterns, options).then(files => pMap(files, mapper, options));
+	return globby(patterns, options).then(files => {
+		return pMap(files, mapper, options)
+			.filter((file) => file !== null);
+	});
 };
 
 module.exports = del;
@@ -50,7 +54,7 @@ module.exports.default = del;
 module.exports.sync = (patterns, options) => {
 	options = Object.assign({}, options);
 
-	const {force, dryRun} = options;
+	const { force, dryRun } = options;
 	delete options.force;
 	delete options.dryRun;
 
@@ -62,7 +66,7 @@ module.exports.sync = (patterns, options) => {
 		file = path.resolve(options.cwd || '', file);
 
 		if (!dryRun) {
-			rimraf.sync(file, {glob: false});
+			rimraf.sync(file, { glob: false });
 		}
 
 		return file;
