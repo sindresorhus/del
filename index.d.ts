@@ -19,9 +19,9 @@ declare namespace del {
 		import del = require('del');
 
 		(async () => {
-			const deletedPaths = await del(['tmp/*.js'], {dryRun: true});
+			const deletedPaths = await del(['temp/*.js'], {dryRun: true});
 
-			console.log('Files and folders that would be deleted:\n', deletedPaths.join('\n'));
+			console.log('Files and directories that would be deleted:\n', deletedPaths.join('\n'));
 		})();
 		```
 		*/
@@ -38,46 +38,43 @@ declare namespace del {
 
 declare const del: {
 	/**
-	Delete files and folders using glob patterns.
+	Delete files and directories using glob patterns.
 
-	@param patterns - See supported minimatch [patterns](https://github.com/isaacs/minimatch#usage).
+	@param patterns - See the supported [`minimatch` patterns](https://github.com/isaacs/minimatch#usage).
 	- [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/master/test/test.js)
 	- [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
 	@param options - See the [`glob` options](https://github.com/isaacs/node-glob#options).
-	@returns A promise for an array of deleted paths.
+	@returns The deleted paths.
 
 	@example
 	```
 	import del = require('del');
 
 	(async () => {
-		const deletedPaths = await del(['tmp/*.js', '!tmp/unicorn.js']);
+		const deletedPaths = await del(['temp/*.js', '!temp/unicorn.js']);
 
-		console.log('Deleted files and folders:\n', deletedPaths.join('\n'));
+		console.log('Deleted files and directories:\n', deletedPaths.join('\n'));
 	})();
 	```
 	*/
 	(
-		patterns: string | ReadonlyArray<string>,
+		patterns: string | readonly string[],
 		options?: del.Options
 	): Promise<string[]>;
 
 	/**
-	Synchronously delete files and folders using glob patterns.
+	Synchronously delete files and directories using glob patterns.
 
 	@param patterns - See supported minimatch [patterns](https://github.com/isaacs/minimatch#usage).
 	- [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/master/test/test.js)
 	- [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
 	@param options - See the [`glob` options](https://github.com/isaacs/node-glob#options).
-	@returns An array of deleted paths.
+	@returns The deleted paths.
 	*/
 	sync(
-		patterns: string | ReadonlyArray<string>,
+		patterns: string | readonly string[],
 		options?: del.Options
 	): string[];
-
-	// TODO: Remove this for the next major release
-	default: typeof del;
 };
 
 export = del;

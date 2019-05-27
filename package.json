@@ -1,7 +1,7 @@
 {
 	"name": "del",
 	"version": "4.1.1",
-	"description": "Delete files and folders",
+	"description": "Delete files and directories",
 	"license": "MIT",
 	"repository": "sindresorhus/del",
 	"author": {
@@ -10,7 +10,7 @@
 		"url": "sindresorhus.com"
 	},
 	"engines": {
-		"node": ">=6"
+		"node": ">=8"
 	},
 	"scripts": {
 		"test": "xo && ava && tsd"
@@ -24,7 +24,6 @@
 		"files",
 		"folders",
 		"directories",
-		"del",
 		"remove",
 		"destroy",
 		"trash",
@@ -41,7 +40,6 @@
 		"file",
 		"folder",
 		"directory",
-		"dir",
 		"fs",
 		"filesystem"
 	],
@@ -51,14 +49,13 @@
 		"is-path-cwd": "^2.0.0",
 		"is-path-in-cwd": "^2.0.0",
 		"p-map": "^2.0.0",
-		"pify": "^4.0.1",
 		"rimraf": "^2.6.3"
 	},
 	"devDependencies": {
 		"ava": "^1.4.1",
-		"make-dir": "^2.1.0",
-		"tempy": "^0.2.1",
-		"tsd": "^0.7.1",
+		"make-dir": "^3.0.0",
+		"tempy": "^0.3.0",
+		"tsd": "^0.7.3",
 		"xo": "^0.24.0"
 	}
 }
