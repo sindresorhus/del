@@ -111,3 +111,16 @@ See [del-cli](https://github.com/sindresorhus/del-cli) for a CLI for this module
 
 - [make-dir](https://github.com/sindresorhus/make-dir) - Make a directory and its parents if needed
 - [globby](https://github.com/sindresorhus/globby) - User-friendly glob matching
+
+
+---
+
+<div align="center">
+	<b>
+		<a href="https://tidelift.com/subscription/pkg/npm-del?utm_source=npm-del&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
+	</b>
+	<br>
+	<sub>
+		Tidelift helps make open source sustainable for maintainers while giving companies<br>assurances about security, maintenance, and licensing for their dependencies.
+	</sub>
+</div>
