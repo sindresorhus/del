@@ -20,7 +20,7 @@ function safeCheck(file) {
 }
 
 module.exports = async (patterns, {force, dryRun, ...options} = {}) => {
-	options = {expandDirectories: false, onlyFiles: false, ...options};
+	options = {expandDirectories: false, onlyFiles: false, followSymbolicLinks: false, ...options};
 	const files = await globby(patterns, options);
 
 	const mapper = async file => {
@@ -41,7 +41,7 @@ module.exports = async (patterns, {force, dryRun, ...options} = {}) => {
 };
 
 module.exports.sync = (patterns, {force, dryRun, ...options} = {}) => {
-	options = {expandDirectories: false, onlyFiles: false, ...options};
+	options = {expandDirectories: false, onlyFiles: false, followSymbolicLinks: false, ...options};
 	return globby.sync(patterns, options).map(file => {
 		if (!force) {
 			safeCheck(file);
