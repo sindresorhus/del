@@ -1,7 +1,7 @@
-import {IOptions as GlobOptions} from 'glob';
+import {GlobbyOptions} from 'globby';
 
 declare namespace del {
-	interface Options extends Readonly<GlobOptions> {
+	interface Options extends GlobbyOptions {
 		/**
 		Allow deleting the current working directory and outside.
 
@@ -40,10 +40,10 @@ declare const del: {
 	/**
 	Delete files and directories using glob patterns.
 
-	@param patterns - See the supported [`minimatch` patterns](https://github.com/isaacs/minimatch#usage).
+	@param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 	- [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/master/test/test.js)
 	- [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
-	@param options - See the [`glob` options](https://github.com/isaacs/node-glob#options).
+	@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options. In constrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
 	@returns The deleted paths.
 
 	@example
@@ -65,10 +65,10 @@ declare const del: {
 	/**
 	Synchronously delete files and directories using glob patterns.
 
-	@param patterns - See supported minimatch [patterns](https://github.com/isaacs/minimatch#usage).
+	@param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 	- [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/master/test/test.js)
 	- [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
-	@param options - See the [`glob` options](https://github.com/isaacs/node-glob#options).
+	@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options. In constrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
 	@returns The deleted paths.
 	*/
 	sync(

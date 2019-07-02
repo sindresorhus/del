@@ -1,6 +1,6 @@
 # del [![Build Status](https://travis-ci.org/sindresorhus/del.svg?branch=master)](https://travis-ci.org/sindresorhus/del) [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/xojs/xo)
 
-> Delete files and directories using [globs](https://github.com/isaacs/minimatch#usage)
+> Delete files and directories using [globs](https://github.com/sindresorhus/globby#globbing-patterns)
 
 Similar to [rimraf](https://github.com/isaacs/rimraf), but with a Promise API and support for multiple files and globbing. It also protects you against deleting the current working directory and above.
 
@@ -50,7 +50,7 @@ Suggestions on how to improve this welcome!
 
 Returns `Promise<string[]>` with the deleted paths.
 
-### del.sync(patterns, [options])
+### del.sync(patterns, options?)
 
 Returns `string[]` with the deleted paths.
 
@@ -58,7 +58,7 @@ Returns `string[]` with the deleted paths.
 
 Type: `string | string[]`
 
-See the supported [`minimatch` patterns](https://github.com/isaacs/minimatch#usage).
+See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 
 - [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/master/test/test.js)
 - [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
@@ -67,7 +67,7 @@ See the supported [`minimatch` patterns](https://github.com/isaacs/minimatch#usa
 
 Type: `object`
 
-See the [`glob` options](https://github.com/isaacs/node-glob#options).
+You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the below options. In constrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
 
 ##### force
 
