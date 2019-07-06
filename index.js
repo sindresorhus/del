@@ -27,7 +27,8 @@ module.exports = async (patterns, {force, dryRun, ...options} = {}) => {
 		...options
 	};
 
-	const files = await globby(patterns, options);
+	const files = (await globby(patterns, options))
+		.sort((a, b) => b.localeCompare(a));
 
 	const mapper = async file => {
 		if (!force) {
@@ -54,7 +55,10 @@ module.exports.sync = (patterns, {force, dryRun, ...options} = {}) => {
 		...options
 	};
 
-	return globby.sync(patterns, options).map(file => {
+	const files = globby.sync(patterns, options)
+		.sort((a, b) => b.localeCompare(a));
+
+	return files.map(file => {
 		if (!force) {
 			safeCheck(file);
 		}
