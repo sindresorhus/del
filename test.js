@@ -5,6 +5,8 @@ import tempy from 'tempy';
 import makeDir from 'make-dir';
 import del from '.';
 
+const processCwd = process.cwd();
+
 function exists(t, files) {
 	for (const file of files) {
 		t.true(fs.existsSync(path.join(t.context.tmp, file)));
@@ -206,4 +208,102 @@ test('delete absolute files outside of process.cwd using cwd - sync', t => {
 
 	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 	notExists(t, ['1.tmp']);
+});
+
+test('cannot delete actual working directory without force: true - async', async t => {
+	process.chdir(t.context.tmp);
+
+	await t.throwsAsync(() => del([t.context.tmp]), {
+		instanceOf: Error,
+		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete actual working directory without force: true - sync', t => {
+	process.chdir(t.context.tmp);
+
+	t.throws(() => del.sync([t.context.tmp]), {
+		instanceOf: Error,
+		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete actual working directory with cwd option without force: true - async', async t => {
+	process.chdir(t.context.tmp);
+
+	await t.throwsAsync(() => del([t.context.tmp], {cwd: __dirname}), {
+		instanceOf: Error,
+		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete actual working directory with cwd option without force: true - sync', t => {
+	process.chdir(t.context.tmp);
+
+	t.throws(() => del.sync([t.context.tmp], {cwd: __dirname}), {
+		instanceOf: Error,
+		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete files outside cwd without force: true - async', async t => {
+	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+
+	await t.throwsAsync(() => del([absolutePath]), {
+		instanceOf: Error,
+		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+});
+
+test('cannot delete files outside cwd without force: true - sync', t => {
+	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+
+	t.throws(() => del.sync([absolutePath]), {
+		instanceOf: Error,
+		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+});
+
+test('cannot delete files inside process.cwd when outside cwd without force: true - async', async t => {
+	process.chdir(t.context.tmp);
+	const removeFile = path.resolve(t.context.tmp, '2.tmp');
+	const cwd = path.resolve(t.context.tmp, '1.tmp');
+
+	await t.throwsAsync(() => del([removeFile], {cwd}), {
+		instanceOf: Error,
+		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete files inside process.cwd when outside cwd without force: true - sync', t => {
+	process.chdir(t.context.tmp);
+	const removeFile = path.resolve(t.context.tmp, '2.tmp');
+	const cwd = path.resolve(t.context.tmp, '1.tmp');
+
+	t.throws(() => del.sync([removeFile], {cwd}), {
+		instanceOf: Error,
+		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
 });
