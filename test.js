@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import test from 'ava';
+import {serial as test} from 'ava';
 import tempy from 'tempy';
 import makeDir from 'make-dir';
 import del from '.';
@@ -67,7 +67,7 @@ test('take options into account - sync', t => {
 	notExists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test.serial('return deleted files - async', async t => {
+test('return deleted files - async', async t => {
 	t.deepEqual(
 		await del('1.tmp', {cwd: t.context.tmp}),
 		[path.join(t.context.tmp, '1.tmp')]
