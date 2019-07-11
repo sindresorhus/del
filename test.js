@@ -177,3 +177,33 @@ test.serial('does not throw EINVAL - sync', t => {
 	notExists(t, [...fixtures, 'a']);
 	t.is(count, totalAttempts);
 });
+
+test('delete relative files outside of process.cwd using cwd - async', async t => {
+	await del(['1.tmp'], {cwd: t.context.tmp});
+
+	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(t, ['1.tmp']);
+});
+
+test('delete relative files outside of process.cwd using cwd - sync', t => {
+	del.sync(['1.tmp'], {cwd: t.context.tmp});
+
+	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(t, ['1.tmp']);
+});
+
+test('delete absolute files outside of process.cwd using cwd - async', async t => {
+	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+	await del([absolutePath], {cwd: t.context.tmp});
+
+	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(t, ['1.tmp']);
+});
+
+test('delete absolute files outside of process.cwd using cwd - sync', t => {
+	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+	del.sync([absolutePath], {cwd: t.context.tmp});
+
+	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(t, ['1.tmp']);
+});
