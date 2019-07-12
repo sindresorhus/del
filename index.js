@@ -22,10 +22,17 @@ function safeCheck(file, cwd) {
 
 function sortOptions(options) {
 	let {
-		force,
-		dryRun,
+		// Shared options
 		cwd = process.cwd(),
 
+		// Del options
+		force,
+		dryRun,
+
+		// PMap options
+		concurrency = Infinity,
+
+		// Rimraf options
 		maxBusyTries,
 		emfileWait,
 		unlink = gracefulFs.unlink,
@@ -41,6 +48,7 @@ function sortOptions(options) {
 		readdir = gracefulFs.readdir,
 		readdirSync = gracefulFs.readdirSync,
 
+		// Globby options
 		...globbyOptions
 	} = options;
 
@@ -50,10 +58,13 @@ function sortOptions(options) {
 		dryRun
 	};
 
+	const pMapOptions = {
+		concurrency
+	};
+
 	const rimrafOptions = {
 		maxBusyTries,
 		emfileWait,
-
 		unlink,
 		unlinkSync,
 		chmod,
@@ -77,11 +88,11 @@ function sortOptions(options) {
 		...globbyOptions
 	};
 
-	return {delOptions, rimrafOptions, globbyOptions};
+	return {delOptions, rimrafOptions, globbyOptions, pMapOptions};
 }
 
 module.exports = async (patterns, options = {}) => {
-	const {delOptions, globbyOptions, rimrafOptions} = sortOptions(options);
+	const {delOptions, globbyOptions, rimrafOptions, pMapOptions} = sortOptions(options);
 
 	const files = (await globby(patterns, globbyOptions))
 		.sort((a, b) => b.localeCompare(a));
@@ -100,7 +111,7 @@ module.exports = async (patterns, options = {}) => {
 		return file;
 	};
 
-	return pMap(files, mapper, options);
+	return pMap(files, mapper, pMapOptions);
 };
 
 module.exports.sync = (patterns, options = {}) => {
