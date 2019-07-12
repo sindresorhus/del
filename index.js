@@ -2,6 +2,7 @@
 const {promisify} = require('util');
 const path = require('path');
 const globby = require('globby');
+const gracefulFs = require('graceful-fs');
 const isPathCwd = require('is-path-cwd');
 const isPathInside = require('is-path-inside');
 const rimraf = require('rimraf');
@@ -27,18 +28,18 @@ function sortOptions(options) {
 
 		maxBusyTries,
 		emfileWait,
-		unlink,
-		unlinkSync,
-		chmod,
-		chmodSync,
-		stat,
-		statSync,
-		lstat,
-		lstatSync,
-		rmdir,
-		rmdirSync,
-		readdir,
-		readdirSync,
+		unlink = gracefulFs.unlink,
+		unlinkSync = gracefulFs.unlinkSync,
+		chmod = gracefulFs.chmod,
+		chmodSync = gracefulFs.chmodSync,
+		stat = gracefulFs.stat,
+		statSync = gracefulFs.statSync,
+		lstat = gracefulFs.lstat,
+		lstatSync = gracefulFs.lstatSync,
+		rmdir = gracefulFs.rmdir,
+		rmdirSync = gracefulFs.rmdirSync,
+		readdir = gracefulFs.readdir,
+		readdirSync = gracefulFs.readdirSync,
 
 		...globbyOptions
 	} = options;

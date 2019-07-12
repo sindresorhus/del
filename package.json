@@ -45,6 +45,7 @@
 	],
 	"dependencies": {
 		"globby": "^10.0.0",
+		"graceful-fs": "^4.2.0",
 		"is-path-cwd": "^2.0.0",
 		"is-path-inside": "^3.0.1",
 		"p-map": "^2.0.0",
