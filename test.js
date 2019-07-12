@@ -111,7 +111,7 @@ test('don\'t delete files, but return them - sync', t => {
 
 // Currently this only testable locally on an osx machine.
 // https://github.com/sindresorhus/del/issues/68
-test.serial('does not throw EINVAL - async', async t => {
+test('does not throw EINVAL - async', async t => {
 	await del('**/*', {
 		cwd: t.context.tmp,
 		dot: true
@@ -146,7 +146,7 @@ test.serial('does not throw EINVAL - async', async t => {
 	t.is(count, totalAttempts);
 });
 
-test.serial('does not throw EINVAL - sync', t => {
+test('does not throw EINVAL - sync', t => {
 	del.sync('**/*', {
 		cwd: t.context.tmp,
 		dot: true
