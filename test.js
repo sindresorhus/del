@@ -1,9 +1,11 @@
 import path from 'path';
 import fs from 'fs';
-import test from 'ava';
+import {serial as test} from 'ava';
 import tempy from 'tempy';
 import makeDir from 'make-dir';
 import del from '.';
+
+const processCwd = process.cwd();
 
 function exists(t, files) {
 	for (const file of files) {
@@ -67,7 +69,7 @@ test('take options into account - sync', t => {
 	notExists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test.serial('return deleted files - async', async t => {
+test('return deleted files - async', async t => {
 	t.deepEqual(
 		await del('1.tmp', {cwd: t.context.tmp}),
 		[path.join(t.context.tmp, '1.tmp')]
@@ -109,7 +111,7 @@ test('don\'t delete files, but return them - sync', t => {
 
 // Currently this only testable locally on an osx machine.
 // https://github.com/sindresorhus/del/issues/68
-test.serial('does not throw EINVAL - async', async t => {
+test('does not throw EINVAL - async', async t => {
 	await del('**/*', {
 		cwd: t.context.tmp,
 		dot: true
@@ -144,7 +146,7 @@ test.serial('does not throw EINVAL - async', async t => {
 	t.is(count, totalAttempts);
 });
 
-test.serial('does not throw EINVAL - sync', t => {
+test('does not throw EINVAL - sync', t => {
 	del.sync('**/*', {
 		cwd: t.context.tmp,
 		dot: true
@@ -176,4 +178,132 @@ test.serial('does not throw EINVAL - sync', t => {
 
 	notExists(t, [...fixtures, 'a']);
 	t.is(count, totalAttempts);
+});
+
+test('delete relative files outside of process.cwd using cwd - async', async t => {
+	await del(['1.tmp'], {cwd: t.context.tmp});
+
+	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(t, ['1.tmp']);
+});
+
+test('delete relative files outside of process.cwd using cwd - sync', t => {
+	del.sync(['1.tmp'], {cwd: t.context.tmp});
+
+	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(t, ['1.tmp']);
+});
+
+test('delete absolute files outside of process.cwd using cwd - async', async t => {
+	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+	await del([absolutePath], {cwd: t.context.tmp});
+
+	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(t, ['1.tmp']);
+});
+
+test('delete absolute files outside of process.cwd using cwd - sync', t => {
+	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+	del.sync([absolutePath], {cwd: t.context.tmp});
+
+	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(t, ['1.tmp']);
+});
+
+test('cannot delete actual working directory without force: true - async', async t => {
+	process.chdir(t.context.tmp);
+
+	await t.throwsAsync(() => del([t.context.tmp]), {
+		instanceOf: Error,
+		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete actual working directory without force: true - sync', t => {
+	process.chdir(t.context.tmp);
+
+	t.throws(() => del.sync([t.context.tmp]), {
+		instanceOf: Error,
+		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete actual working directory with cwd option without force: true - async', async t => {
+	process.chdir(t.context.tmp);
+
+	await t.throwsAsync(() => del([t.context.tmp], {cwd: __dirname}), {
+		instanceOf: Error,
+		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete actual working directory with cwd option without force: true - sync', t => {
+	process.chdir(t.context.tmp);
+
+	t.throws(() => del.sync([t.context.tmp], {cwd: __dirname}), {
+		instanceOf: Error,
+		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete files outside cwd without force: true - async', async t => {
+	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+
+	await t.throwsAsync(() => del([absolutePath]), {
+		instanceOf: Error,
+		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+});
+
+test('cannot delete files outside cwd without force: true - sync', t => {
+	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+
+	t.throws(() => del.sync([absolutePath]), {
+		instanceOf: Error,
+		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+});
+
+test('cannot delete files inside process.cwd when outside cwd without force: true - async', async t => {
+	process.chdir(t.context.tmp);
+	const removeFile = path.resolve(t.context.tmp, '2.tmp');
+	const cwd = path.resolve(t.context.tmp, '1.tmp');
+
+	await t.throwsAsync(() => del([removeFile], {cwd}), {
+		instanceOf: Error,
+		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
+});
+
+test('cannot delete files inside process.cwd when outside cwd without force: true - sync', t => {
+	process.chdir(t.context.tmp);
+	const removeFile = path.resolve(t.context.tmp, '2.tmp');
+	const cwd = path.resolve(t.context.tmp, '1.tmp');
+
+	t.throws(() => del.sync([removeFile], {cwd}), {
+		instanceOf: Error,
+		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
+	});
+
+	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	process.chdir(processCwd);
 });
