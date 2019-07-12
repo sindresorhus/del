@@ -2,6 +2,8 @@
 const {promisify} = require('util');
 const path = require('path');
 const globby = require('globby');
+const isGlob = require('is-glob');
+const slash = require('slash');
 const isPathCwd = require('is-path-cwd');
 const isPathInside = require('is-path-inside');
 const rimraf = require('rimraf');
@@ -19,6 +21,20 @@ function safeCheck(file, cwd) {
 	}
 }
 
+function normalizePatterns(patterns) {
+	patterns = Array.isArray(patterns) ? patterns : [patterns];
+
+	patterns = patterns.map(pattern => {
+		if (process.platform === 'win32' && isGlob(pattern) === false) {
+			return slash(pattern);
+		}
+
+		return pattern;
+	});
+
+	return patterns;
+}
+
 module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {
 	options = {
 		expandDirectories: false,
@@ -27,6 +43,8 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 		cwd,
 		...options
 	};
+
+	patterns = normalizePatterns(patterns);
 
 	const files = (await globby(patterns, options))
 		.sort((a, b) => b.localeCompare(a));
@@ -56,6 +74,8 @@ module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options
 		cwd,
 		...options
 	};
+
+	patterns = normalizePatterns(patterns);
 
 	const files = globby.sync(patterns, options)
 		.sort((a, b) => b.localeCompare(a));
