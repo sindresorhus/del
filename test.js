@@ -317,59 +317,35 @@ test('cannot delete files inside process.cwd when outside cwd without force: tru
 });
 
 test('windows can pass absolute paths with "\\" - async', async t => {
-	const processPlatform = process.platform;
-	Object.defineProperty(process, 'platform', {value: 'win32'});
-
 	const filePath = path.resolve(t.context.tmp, '1.tmp');
-	const win32FilePath = path.win32.normalize(filePath);
 
-	const removeFiles = await del([win32FilePath], {cwd: t.context.tmp, dryRun: true});
+	const removeFiles = await del([filePath], {cwd: t.context.tmp, dryRun: true});
 
 	t.deepEqual(removeFiles, [filePath]);
-
-	Object.defineProperty(process, 'platform', {value: processPlatform});
 });
 
 test('windows can pass absolute paths with "\\" - sync', t => {
-	const processPlatform = process.platform;
-	Object.defineProperty(process, 'platform', {value: 'win32'});
-
 	const filePath = path.resolve(t.context.tmp, '1.tmp');
-	const win32FilePath = path.win32.normalize(filePath);
 
-	const removeFiles = del.sync([win32FilePath], {cwd: t.context.tmp, dryRun: true});
+	const removeFiles = del.sync([filePath], {cwd: t.context.tmp, dryRun: true});
 
 	t.deepEqual(removeFiles, [filePath]);
-
-	Object.defineProperty(process, 'platform', {value: processPlatform});
 });
 
 test('windows can pass relative paths with "\\" - async', async t => {
 	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
 	makeDir.sync(nestedFile);
 
-	const processPlatform = process.platform;
-	Object.defineProperty(process, 'platform', {value: 'win32'});
-
-	const win32FilePath = path.win32.normalize(nestedFile);
-	const removeFiles = await del([win32FilePath], {cwd: t.context.tmp, dryRun: true});
+	const removeFiles = await del([nestedFile], {cwd: t.context.tmp, dryRun: true});
 
 	t.deepEqual(removeFiles, [nestedFile]);
-
-	Object.defineProperty(process, 'platform', {value: processPlatform});
 });
 
 test('windows can pass relative paths with "\\" - sync', t => {
 	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
 	makeDir.sync(nestedFile);
 
-	const processPlatform = process.platform;
-	Object.defineProperty(process, 'platform', {value: 'win32'});
-
-	const win32FilePath = path.win32.normalize(nestedFile);
-	const removeFiles = del.sync([win32FilePath], {cwd: t.context.tmp, dryRun: true});
+	const removeFiles = del.sync([nestedFile], {cwd: t.context.tmp, dryRun: true});
 
 	t.deepEqual(removeFiles, [nestedFile]);
-
-	Object.defineProperty(process, 'platform', {value: processPlatform});
 });
