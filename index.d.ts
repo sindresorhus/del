@@ -1,7 +1,37 @@
+import * as fs from 'fs';
 import {GlobbyOptions} from 'globby';
 
+interface ExternalOptions extends GlobbyOptions {
+	/**
+	 Windows: EBUSY and ENOTEMPTY - rimraf will back off a maximum of opts.maxBusyTries times before giving up, adding 100ms of wait between each attempt.
+
+	 @default 3
+	 */
+	readonly maxBusyTries?: number;
+
+	/**
+	 Since readdir requires opening a file descriptor, it's possible to hit EMFILE if too many file descriptors are in use. In the sync case, there's nothing to be done for this. But in the async case, rimraf will gradually back off with timeouts up to opts.emfileWait ms, which defaults to 1000.
+
+	 @default 1000
+	 */
+	readonly emfileWait?: number;
+
+	readonly unlink?: typeof fs.unlink;
+	readonly unlinkSync?: typeof fs.unlinkSync;
+	readonly chmod?: typeof fs.chmod;
+	readonly chmodSync?: typeof fs.chmodSync;
+	readonly stat?: typeof fs.stat;
+	readonly statSync?: typeof fs.statSync;
+	readonly lstat?: typeof fs.lstat;
+	readonly lstatSync?: typeof fs.lstatSync;
+	readonly rmdir?: typeof fs.rmdir;
+	readonly rmdirSync?: typeof fs.rmdirSync;
+	readonly readdir?: typeof fs.readdir;
+	readonly readdirSync?: typeof fs.readdirSync;
+}
+
 declare namespace del {
-	interface Options extends GlobbyOptions {
+	interface Options extends ExternalOptions {
 		/**
 		Allow deleting the current working directory and outside.
 

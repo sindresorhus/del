@@ -69,7 +69,9 @@ See the supported [glob patterns](https://github.com/sindresorhus/globby#globbin
 
 Type: `object`
 
-You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the below options. In constrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
+You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) or [`rimraf` options](https://github.com/isaacs/rimraf#options) in addition to the below options.
+
+In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
 
 ##### force
 

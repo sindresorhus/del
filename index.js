@@ -19,27 +19,81 @@ function safeCheck(file, cwd) {
 	}
 }
 
-module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {
-	options = {
+function sortOptions(options) {
+	let {
+		force,
+		dryRun,
+		cwd = process.cwd(),
+
+		maxBusyTries,
+		emfileWait,
+		unlink,
+		unlinkSync,
+		chmod,
+		chmodSync,
+		stat,
+		statSync,
+		lstat,
+		lstatSync,
+		rmdir,
+		rmdirSync,
+		readdir,
+		readdirSync,
+
+		...globbyOptions
+	} = options;
+
+	const delOptions = {
+		cwd,
+		force,
+		dryRun
+	};
+
+	const rimrafOptions = {
+		maxBusyTries,
+		emfileWait,
+
+		unlink,
+		unlinkSync,
+		chmod,
+		chmodSync,
+		stat,
+		statSync,
+		lstat,
+		lstatSync,
+		rmdir,
+		rmdirSync,
+		readdir,
+		readdirSync,
+		glob: false
+	};
+
+	globbyOptions = {
 		expandDirectories: false,
 		onlyFiles: false,
 		followSymbolicLinks: false,
 		cwd,
-		...options
+		...globbyOptions
 	};
 
-	const files = (await globby(patterns, options))
+	return {delOptions, rimrafOptions, globbyOptions};
+}
+
+module.exports = async (patterns, options = {}) => {
+	const {delOptions, globbyOptions, rimrafOptions} = sortOptions(options);
+
+	const files = (await globby(patterns, globbyOptions))
 		.sort((a, b) => b.localeCompare(a));
 
 	const mapper = async file => {
-		file = path.resolve(cwd, file);
+		file = path.resolve(delOptions.cwd, file);
 
-		if (!force) {
-			safeCheck(file, cwd);
+		if (!delOptions.force) {
+			safeCheck(file, delOptions.cwd);
 		}
 
-		if (!dryRun) {
-			await rimrafP(file, {glob: false});
+		if (!delOptions.dryRun) {
+			await rimrafP(file, rimrafOptions);
 		}
 
 		return file;
@@ -48,27 +102,21 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 	return pMap(files, mapper, options);
 };
 
-module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {
-	options = {
-		expandDirectories: false,
-		onlyFiles: false,
-		followSymbolicLinks: false,
-		cwd,
-		...options
-	};
+module.exports.sync = (patterns, options = {}) => {
+	const {delOptions, globbyOptions, rimrafOptions} = sortOptions(options);
 
-	const files = globby.sync(patterns, options)
+	const files = globby.sync(patterns, globbyOptions)
 		.sort((a, b) => b.localeCompare(a));
 
 	return files.map(file => {
-		file = path.resolve(cwd, file);
+		file = path.resolve(delOptions.cwd, file);
 
-		if (!force) {
-			safeCheck(file, cwd);
+		if (!delOptions.force) {
+			safeCheck(file, delOptions.cwd);
 		}
 
-		if (!dryRun) {
-			rimraf.sync(file, {glob: false});
+		if (!delOptions.dryRun) {
+			rimraf.sync(file, rimrafOptions);
 		}
 
 		return file;
