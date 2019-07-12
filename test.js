@@ -109,7 +109,7 @@ test('don\'t delete files, but return them - sync', t => {
 	]);
 });
 
-// Currently this only testable locally on an osx machine.
+// Currently this is only testable locally on macOS.
 // https://github.com/sindresorhus/del/issues/68
 test('does not throw EINVAL - async', async t => {
 	await del('**/*', {
@@ -213,7 +213,7 @@ test('delete absolute files outside of process.cwd using cwd - sync', t => {
 test('cannot delete actual working directory without force: true - async', async t => {
 	process.chdir(t.context.tmp);
 
-	await t.throwsAsync(() => del([t.context.tmp]), {
+	await t.throwsAsync(del([t.context.tmp]), {
 		instanceOf: Error,
 		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
 	});
@@ -225,7 +225,9 @@ test('cannot delete actual working directory without force: true - async', async
 test('cannot delete actual working directory without force: true - sync', t => {
 	process.chdir(t.context.tmp);
 
-	t.throws(() => del.sync([t.context.tmp]), {
+	t.throws(() => {
+		del.sync([t.context.tmp]);
+	}, {
 		instanceOf: Error,
 		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
 	});
@@ -237,7 +239,7 @@ test('cannot delete actual working directory without force: true - sync', t => {
 test('cannot delete actual working directory with cwd option without force: true - async', async t => {
 	process.chdir(t.context.tmp);
 
-	await t.throwsAsync(() => del([t.context.tmp], {cwd: __dirname}), {
+	await t.throwsAsync(del([t.context.tmp], {cwd: __dirname}), {
 		instanceOf: Error,
 		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
 	});
@@ -249,7 +251,9 @@ test('cannot delete actual working directory with cwd option without force: true
 test('cannot delete actual working directory with cwd option without force: true - sync', t => {
 	process.chdir(t.context.tmp);
 
-	t.throws(() => del.sync([t.context.tmp], {cwd: __dirname}), {
+	t.throws(() => {
+		del.sync([t.context.tmp], {cwd: __dirname});
+	}, {
 		instanceOf: Error,
 		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.'
 	});
@@ -261,7 +265,7 @@ test('cannot delete actual working directory with cwd option without force: true
 test('cannot delete files outside cwd without force: true - async', async t => {
 	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
 
-	await t.throwsAsync(() => del([absolutePath]), {
+	await t.throwsAsync(del([absolutePath]), {
 		instanceOf: Error,
 		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
 	});
@@ -272,7 +276,9 @@ test('cannot delete files outside cwd without force: true - async', async t => {
 test('cannot delete files outside cwd without force: true - sync', t => {
 	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
 
-	t.throws(() => del.sync([absolutePath]), {
+	t.throws(() => {
+		del.sync([absolutePath]);
+	}, {
 		instanceOf: Error,
 		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
 	});
@@ -285,7 +291,7 @@ test('cannot delete files inside process.cwd when outside cwd without force: tru
 	const removeFile = path.resolve(t.context.tmp, '2.tmp');
 	const cwd = path.resolve(t.context.tmp, '1.tmp');
 
-	await t.throwsAsync(() => del([removeFile], {cwd}), {
+	await t.throwsAsync(del([removeFile], {cwd}), {
 		instanceOf: Error,
 		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
 	});
@@ -299,7 +305,9 @@ test('cannot delete files inside process.cwd when outside cwd without force: tru
 	const removeFile = path.resolve(t.context.tmp, '2.tmp');
 	const cwd = path.resolve(t.context.tmp, '1.tmp');
 
-	t.throws(() => del.sync([removeFile], {cwd}), {
+	t.throws(() => {
+		del.sync([removeFile], {cwd});
+	}, {
 		instanceOf: Error,
 		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
 	});
