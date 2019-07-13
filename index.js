@@ -45,7 +45,11 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 		return file;
 	};
 
-	return pMap(files, mapper, options);
+	const removedFiles = await pMap(files, mapper, options);
+
+	removedFiles.reverse();
+
+	return removedFiles;
 };
 
 module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {
@@ -60,7 +64,7 @@ module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options
 	const files = globby.sync(patterns, options)
 		.sort((a, b) => b.localeCompare(a));
 
-	return files.map(file => {
+	const removedFiles = files.map(file => {
 		file = path.resolve(cwd, file);
 
 		if (!force) {
@@ -73,4 +77,8 @@ module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options
 
 		return file;
 	});
+
+	removedFiles.reverse();
+
+	return removedFiles;
 };
