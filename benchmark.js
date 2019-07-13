@@ -1,5 +1,4 @@
 'use strict';
-
 const path = require('path');
 const Benchmark = require('benchmark');
 const makeDir = require('make-dir');
