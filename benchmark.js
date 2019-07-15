@@ -19,10 +19,10 @@ function createFixtures() {
 	}
 }
 
-const concurrency = [1, 3, 5, 10, 15, 20, 50, 100, Infinity];
+const concurrencies = [1, 3, 5, 10, 15, 20, 50, 100, Infinity];
 
-concurrency.forEach(num => {
-	const name = `concurrency: ${num.toString()}`;
+for (const concurrency of concurrencies) {
+	const name = `concurrency: ${concurrency.toString()}`;
 
 	suite.add({
 		name,
@@ -35,7 +35,7 @@ concurrency.forEach(num => {
 			// Async await was giving too many errors. stick with standard promises
 			del(['**/*'], {
 				cwd: tempDir,
-				concurrency: num
+				concurrency
 				// eslint-disable-next-line promise/prefer-await-to-then
 			}).then(removedFiles => {
 				if (removedFiles.length !== fixtures.length) {
@@ -55,7 +55,7 @@ concurrency.forEach(num => {
 			});
 		}
 	});
-});
+}
 
 suite
 	.on('cycle', event => {
