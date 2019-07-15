@@ -47,7 +47,7 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 
 	const removedFiles = await pMap(files, mapper, options);
 
-	removedFiles.reverse();
+	removedFiles.sort((a, b) => a.localeCompare(b));
 
 	return removedFiles;
 };
@@ -78,7 +78,7 @@ module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options
 		return file;
 	});
 
-	removedFiles.reverse();
+	removedFiles.sort((a, b) => a.localeCompare(b));
 
 	return removedFiles;
 };
