@@ -60,7 +60,7 @@ declare const del: {
 	```
 	*/
 	(
-		patterns: string | readonly string[],
+		patterns: string | ReadonlyArray<string>,
 		options?: del.Options
 	): Promise<string[]>;
 
@@ -76,7 +76,7 @@ declare const del: {
 	@returns The deleted paths.
 	*/
 	sync(
-		patterns: string | readonly string[],
+		patterns: string | ReadonlyArray<string>,
 		options?: del.Options
 	): string[];
 };
