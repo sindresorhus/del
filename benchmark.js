@@ -19,7 +19,7 @@ function createFixtures() {
 	}
 }
 
-const concurrencies = [1, 3, 5, 10, 15, 20, 50, 100, Infinity];
+const concurrencies = [1, 3, 5, 10, 15, 20, 50, 100, 200, 300, 400, 500, 1000, Infinity];
 
 for (const concurrency of concurrencies) {
 	const name = `concurrency: ${concurrency.toString()}`;
