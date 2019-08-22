@@ -27,32 +27,30 @@ for (const concurrency of concurrencies) {
 	suite.add({
 		name,
 		defer: true,
-		fn(deferred) {
+		async fn(deferred) {
 			// Can't use setup because it isn't called after every defer
 			// https://github.com/bestiejs/benchmark.js/issues/136
 			createFixtures();
 
-			// Async await was giving too many errors. stick with standard promises
-			del(['**/*'], {
+			const removedFiles = await del(['**/*'], {
 				cwd: tempDir,
 				concurrency
-				// eslint-disable-next-line promise/prefer-await-to-then
-			}).then(removedFiles => {
-				if (removedFiles.length !== fixtures.length) {
-					const error = new Error(
-						`"${name}": files removed: ${removedFiles.length}, expected: ${fixtures.length}`,
-					);
-
-					console.error(error);
-
-					del.sync(tempDir, {cwd: tempDir, force: true});
-
-					// eslint-disable-next-line unicorn/no-process-exit
-					process.exit(1);
-				}
-
-				deferred.resolve();
 			});
+
+			if (removedFiles.length !== fixtures.length) {
+				const error = new Error(
+					`"${name}": files removed: ${removedFiles.length}, expected: ${fixtures.length}`,
+				);
+
+				console.error(error);
+
+				del.sync(tempDir, {cwd: tempDir, force: true});
+
+				// eslint-disable-next-line unicorn/no-process-exit
+				process.exit(1);
+			}
+
+			deferred.resolve();
 		}
 	});
 }
