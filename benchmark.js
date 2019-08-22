@@ -27,6 +27,7 @@ for (const concurrency of concurrencies) {
 	suite.add({
 		name,
 		defer: true,
+		setup(){}, // this line breaks async await
 		async fn(deferred) {
 			// Can't use setup because it isn't called after every defer
 			// https://github.com/bestiejs/benchmark.js/issues/136
