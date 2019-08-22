@@ -90,9 +90,9 @@ test('don\'t delete files, but return them - async', async t => {
 	});
 	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 	t.deepEqual(deletedFiles, [
-		path.join(t.context.tmp, '4.tmp'),
+		path.join(t.context.tmp, '2.tmp'),
 		path.join(t.context.tmp, '3.tmp'),
-		path.join(t.context.tmp, '2.tmp')
+		path.join(t.context.tmp, '4.tmp')
 	]);
 });
 
@@ -103,9 +103,9 @@ test('don\'t delete files, but return them - sync', t => {
 	});
 	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 	t.deepEqual(deletedFiles, [
-		path.join(t.context.tmp, '4.tmp'),
+		path.join(t.context.tmp, '2.tmp'),
 		path.join(t.context.tmp, '3.tmp'),
-		path.join(t.context.tmp, '2.tmp')
+		path.join(t.context.tmp, '4.tmp')
 	]);
 });
 
@@ -131,10 +131,10 @@ test('does not throw EINVAL - async', async t => {
 		});
 
 		const expected = [
-			path.resolve(t.context.tmp, 'a/b/c/nested.js'),
-			path.resolve(t.context.tmp, 'a/b/c'),
+			path.resolve(t.context.tmp, 'a'),
 			path.resolve(t.context.tmp, 'a/b'),
-			path.resolve(t.context.tmp, 'a')
+			path.resolve(t.context.tmp, 'a/b/c'),
+			path.resolve(t.context.tmp, 'a/b/c/nested.js')
 		];
 
 		t.deepEqual(removed, expected);
@@ -165,10 +165,10 @@ test('does not throw EINVAL - sync', t => {
 		});
 
 		const expected = [
-			path.resolve(t.context.tmp, 'a/b/c/nested.js'),
-			path.resolve(t.context.tmp, 'a/b/c'),
+			path.resolve(t.context.tmp, 'a'),
 			path.resolve(t.context.tmp, 'a/b'),
-			path.resolve(t.context.tmp, 'a')
+			path.resolve(t.context.tmp, 'a/b/c'),
+			path.resolve(t.context.tmp, 'a/b/c/nested.js')
 		];
 
 		t.deepEqual(removed, expected);
