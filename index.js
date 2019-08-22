@@ -2,12 +2,29 @@
 const {promisify} = require('util');
 const path = require('path');
 const globby = require('globby');
+const gracefulFs = require('graceful-fs');
 const isPathCwd = require('is-path-cwd');
 const isPathInside = require('is-path-inside');
 const rimraf = require('rimraf');
 const pMap = require('p-map');
 
 const rimrafP = promisify(rimraf);
+
+const rimrafOptions = {
+	glob: false,
+	unlink: gracefulFs.unlink,
+	unlinkSync: gracefulFs.unlinkSync,
+	chmod: gracefulFs.chmod,
+	chmodSync: gracefulFs.chmodSync,
+	stat: gracefulFs.stat,
+	statSync: gracefulFs.statSync,
+	lstat: gracefulFs.lstat,
+	lstatSync: gracefulFs.lstatSync,
+	rmdir: gracefulFs.rmdir,
+	rmdirSync: gracefulFs.rmdirSync,
+	readdir: gracefulFs.readdir,
+	readdirSync: gracefulFs.readdirSync
+};
 
 function safeCheck(file, cwd) {
 	if (isPathCwd(file)) {
@@ -39,7 +56,7 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 		}
 
 		if (!dryRun) {
-			await rimrafP(file, {glob: false});
+			await rimrafP(file, rimrafOptions);
 		}
 
 		return file;
@@ -72,7 +89,7 @@ module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options
 		}
 
 		if (!dryRun) {
-			rimraf.sync(file, {glob: false});
+			rimraf.sync(file, rimrafOptions);
 		}
 
 		return file;
