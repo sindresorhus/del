@@ -40,8 +40,6 @@ declare const del: {
 	/**
 	Delete files and directories using glob patterns.
 
-	Note that glob patterns can only contain forward-slashes, not backward-slashes, so if you want to construct a glob pattern from path components, you need to use `path.posix.join()` instead of `path.join()`.
-
 	@param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 	- [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/master/test/test.js)
 	- [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
@@ -66,8 +64,6 @@ declare const del: {
 
 	/**
 	Synchronously delete files and directories using glob patterns.
-
-	Note that glob patterns can only contain forward-slashes, not backward-slashes, so if you want to construct a glob pattern from path components, you need to use `path.posix.join()` instead of `path.join()`.
 
 	@param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 	- [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/master/test/test.js)
