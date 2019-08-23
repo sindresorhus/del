@@ -9,7 +9,7 @@ const suite = new Benchmark.Suite('concurrency');
 
 const tempDir = tempy.directory();
 
-const fixtures = Array.from({length: 2000}, (x, index) => {
+const fixtures = Array.from({length: 2000}, (_, index) => {
 	return path.resolve(tempDir, (index + 1).toString());
 });
 
@@ -19,7 +19,22 @@ function createFixtures() {
 	}
 }
 
-const concurrencies = [1, 3, 5, 10, 15, 20, 50, 100, 200, 300, 400, 500, 1000, Infinity];
+const concurrencies = [
+	1,
+	3,
+	5,
+	10,
+	15,
+	20,
+	50,
+	100,
+	200,
+	300,
+	400,
+	500,
+	1000,
+	Infinity
+];
 
 for (const concurrency of concurrencies) {
 	const name = `concurrency: ${concurrency.toString()}`;
@@ -29,7 +44,8 @@ for (const concurrency of concurrencies) {
 		defer: true,
 		setup() {}, // This line breaks async await
 		async fn(deferred) {
-			// Can't use setup because it isn't called after every defer
+			// Can't use `setup()` because it isn't called after every
+			// defer and it breaks using `async` keyword here.
 			// https://github.com/bestiejs/benchmark.js/issues/136
 			createFixtures();
 
