@@ -46,7 +46,7 @@ Suggestions on how to improve this welcome!
 
 ## API
 
-Note that glob patterns can only contain forward-slashes, not backward-slashes, so if you want to construct a glob pattern from path components, you need to use `path.posix.join()` instead of `path.join()`.
+Note that glob patterns can only contain forward-slashes, not backward-slashes. Windows file paths can use backward-slashes as long as the path does not contain any glob-like characters, otherwise use `path.posix.join()` instead of `path.join()`.
 
 ### del(patterns, options?)
 
@@ -69,7 +69,7 @@ See the supported [glob patterns](https://github.com/sindresorhus/globby#globbin
 
 Type: `object`
 
-You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the below options. In constrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
+You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the below options. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
 
 ##### force
 

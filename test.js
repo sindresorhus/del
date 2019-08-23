@@ -315,3 +315,37 @@ test('cannot delete files inside process.cwd when outside cwd without force: tru
 	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 	process.chdir(processCwd);
 });
+
+test('windows can pass absolute paths with "\\" - async', async t => {
+	const filePath = path.resolve(t.context.tmp, '1.tmp');
+
+	const removeFiles = await del([filePath], {cwd: t.context.tmp, dryRun: true});
+
+	t.deepEqual(removeFiles, [filePath]);
+});
+
+test('windows can pass absolute paths with "\\" - sync', t => {
+	const filePath = path.resolve(t.context.tmp, '1.tmp');
+
+	const removeFiles = del.sync([filePath], {cwd: t.context.tmp, dryRun: true});
+
+	t.deepEqual(removeFiles, [filePath]);
+});
+
+test('windows can pass relative paths with "\\" - async', async t => {
+	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
+	makeDir.sync(nestedFile);
+
+	const removeFiles = await del([nestedFile], {cwd: t.context.tmp, dryRun: true});
+
+	t.deepEqual(removeFiles, [nestedFile]);
+});
+
+test('windows can pass relative paths with "\\" - sync', t => {
+	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
+	makeDir.sync(nestedFile);
+
+	const removeFiles = del.sync([nestedFile], {cwd: t.context.tmp, dryRun: true});
+
+	t.deepEqual(removeFiles, [nestedFile]);
+});
