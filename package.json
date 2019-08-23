@@ -13,7 +13,8 @@
 		"node": ">=8"
 	},
 	"scripts": {
-		"test": "xo && ava && tsd"
+		"test": "xo && ava && tsd",
+		"bench": "node benchmark.js"
 	},
 	"files": [
 		"index.js",
@@ -53,6 +54,7 @@
 	},
 	"devDependencies": {
 		"ava": "^2.3.0",
+		"benchmark": "^2.1.4",
 		"make-dir": "^3.0.0",
 		"tempy": "^0.3.0",
 		"tsd": "^0.7.3",
