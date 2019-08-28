@@ -42,7 +42,6 @@ for (const concurrency of concurrencies) {
 	suite.add({
 		name,
 		defer: true,
-		setup() {}, // This line breaks async await
 		async fn(deferred) {
 			// Can't use `setup()` because it isn't called after every
 			// defer and it breaks using `async` keyword here.
