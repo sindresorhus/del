@@ -18,12 +18,14 @@ $ npm install del
 const del = require('del');
 
 (async () => {
-	const deletedPaths = await del(['temp/*.js', '!temp/unicorn.js']);
+	const deletedFilePaths = await del(['temp/*.js', '!temp/unicorn.js']);
+	const deletedDirPaths = await del(['temp', 'public']);
 
-	console.log('Deleted files and directories:\n', deletedPaths.join('\n'));
+	console.log('Deleted files:\n', deletedFilePaths.join('\n'));
+	console.log('\n\n')
+	console.log('Deleted directories:\n', deletedDirPaths.join('\n))
 })();
 ```
-
 
 ## Beware
 
