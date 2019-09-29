@@ -47,7 +47,7 @@ del.sync(['public/assets/**', '!public/assets', '!public/assets/goat.png']);
 To delete all sub-directories inside `public/`, you can do:
 
 ```js
-dev.sync([`public/*/`]);
+del.sync([`public/*/`]);
 ```
 
 Suggestions on how to improve this welcome!
