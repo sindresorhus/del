@@ -112,20 +112,14 @@ Concurrency limit.
 See [del-cli](https://github.com/sindresorhus/del-cli) for a CLI for this module and [trash-cli](https://github.com/sindresorhus/trash-cli) for a safe version that is suitable for running by hand.
 
 
+## del for enterprise
+
+Available as part of the Tidelift Subscription.
+
+The maintainers of del and thousands of other packages are working with Tidelift to deliver commercial support and maintenance for the open source dependencies you use to build your applications. Save time, reduce risk, and improve code health, while paying the maintainers of the exact dependencies you use. [Learn more.](https://tidelift.com/subscription/pkg/npm-del?utm_source=npm-del&utm_medium=referral&utm_campaign=enterprise&utm_term=repo)
+
+
 ## Related
 
 - [make-dir](https://github.com/sindresorhus/make-dir) - Make a directory and its parents if needed
 - [globby](https://github.com/sindresorhus/globby) - User-friendly glob matching
-
-
----
-
-<div align="center">
-	<b>
-		<a href="https://tidelift.com/subscription/pkg/npm-del?utm_source=npm-del&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
-	</b>
-	<br>
-	<sub>
-		Tidelift helps make open source sustainable for maintainers while giving companies<br>assurances about security, maintenance, and licensing for their dependencies.
-	</sub>
-</div>
