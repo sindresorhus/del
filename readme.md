@@ -44,7 +44,7 @@ You have to explicitly ignore the parent directories too:
 del.sync(['public/assets/**', '!public/assets', '!public/assets/goat.png']);
 ```
 
-To delete all sub-directories inside `public/`, you can do:
+To delete all subdirectories inside `public/`, you can do:
 
 ```js
 del.sync([`public/*/`]);
