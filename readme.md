@@ -1,44 +1,14 @@
-# del [![Build Status](https://travis-ci.org/sindresorhus/del.svg?branch=master)](https://travis-ci.org/sindresorhus/del) [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/xojs/xo)
+# del [![Build Status](https://travis-ci.com/sindresorhus/del.svg?branch=master)](https://travis-ci.com/github/sindresorhus/del) [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/xojs/xo)
 
 > Delete files and directories using [globs](https://github.com/sindresorhus/globby#globbing-patterns)
 
 Similar to [rimraf](https://github.com/isaacs/rimraf), but with a Promise API and support for multiple files and globbing. It also protects you against deleting the current working directory and above.
-
-<br>
-
----
-
-<div align="center">
-	<p>
-		<p>
-			<sup>
-				<a href="https://github.com/sponsors/sindresorhus">My open source work is supported by the community</a>
-			</sup>
-		</p>
-		<sup>Special thanks to:</sup>
-		<br>
-		<br>
-		<a href="https://github.com/botpress/botpress">
-			<img src="https://sindresorhus.com/assets/thanks/botpress-logo.svg" width="260" alt="Botpress">
-		</a>
-		<br>
-		<sub><b>Botpress is an open-source conversational assistant creation platform.</b></sub>
-		<br>
-		<sub>They <a href="https://github.com/botpress/botpress/blob/master/.github/CONTRIBUTING.md">welcome contributions</a> from anyone, whether you're into machine learning,<br>want to get started in open-source, or just have an improvement idea.</sub>
-		<br>
-	</p>
-</div>
-
----
-
-<br>
 
 ## Install
 
 ```
 $ npm install del
 ```
-
 
 ## Usage
 
@@ -54,7 +24,6 @@ const del = require('del');
 	console.log('Deleted directories:\n', deletedDirectoryPaths.join('\n));
 })();
 ```
-
 
 ## Beware
 
@@ -79,7 +48,6 @@ del.sync(['public/*/']);
 ```
 
 Suggestions on how to improve this welcome!
-
 
 ## API
 
@@ -110,14 +78,14 @@ You can specify any of the [`globby` options](https://github.com/sindresorhus/gl
 
 ##### force
 
-Type: `boolean`<br>
+Type: `boolean`\
 Default: `false`
 
 Allow deleting the current working directory and outside.
 
 ##### dryRun
 
-Type: `boolean`<br>
+Type: `boolean`\
 Default: `false`
 
 See what would be deleted.
@@ -134,24 +102,21 @@ const del = require('del');
 
 ##### concurrency
 
-Type: `number`<br>
-Default: `Infinity`<br>
+Type: `number`\
+Default: `Infinity`\
 Minimum: `1`
 
 Concurrency limit.
 
-
 ## CLI
 
 See [del-cli](https://github.com/sindresorhus/del-cli) for a CLI for this module and [trash-cli](https://github.com/sindresorhus/trash-cli) for a safe version that is suitable for running by hand.
-
 
 ## del for enterprise
 
 Available as part of the Tidelift Subscription.
 
 The maintainers of del and thousands of other packages are working with Tidelift to deliver commercial support and maintenance for the open source dependencies you use to build your applications. Save time, reduce risk, and improve code health, while paying the maintainers of the exact dependencies you use. [Learn more.](https://tidelift.com/subscription/pkg/npm-del?utm_source=npm-del&utm_medium=referral&utm_campaign=enterprise&utm_term=repo)
-
 
 ## Related
 
