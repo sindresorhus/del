@@ -7,15 +7,15 @@ const del = require('.');
 
 const suite = new Benchmark.Suite('concurrency');
 
-const tempDir = tempy.directory();
+const temporaryDir = tempy.directory();
 
 const fixtures = Array.from({length: 2000}, (_, index) => {
-	return path.resolve(tempDir, (index + 1).toString());
+	return path.resolve(temporaryDir, (index + 1).toString());
 });
 
 function createFixtures() {
 	for (const fixture of fixtures) {
-		makeDir.sync(path.resolve(tempDir, fixture));
+		makeDir.sync(path.resolve(temporaryDir, fixture));
 	}
 }
 
@@ -49,18 +49,18 @@ for (const concurrency of concurrencies) {
 			createFixtures();
 
 			const removedFiles = await del(['**/*'], {
-				cwd: tempDir,
+				cwd: temporaryDir,
 				concurrency
 			});
 
 			if (removedFiles.length !== fixtures.length) {
 				const error = new Error(
-					`"${name}": files removed: ${removedFiles.length}, expected: ${fixtures.length}`,
+					`"${name}": files removed: ${removedFiles.length}, expected: ${fixtures.length}`
 				);
 
 				console.error(error);
 
-				del.sync(tempDir, {cwd: tempDir, force: true});
+				del.sync(temporaryDir, {cwd: temporaryDir, force: true});
 
 				// eslint-disable-next-line unicorn/no-process-exit
 				process.exit(1);
@@ -78,6 +78,6 @@ suite
 	.on('complete', function () {
 		console.log(`Fastest is ${this.filter('fastest').map('name')}`);
 
-		del.sync(tempDir, {cwd: tempDir, force: true});
+		del.sync(temporaryDir, {cwd: temporaryDir, force: true});
 	})
 	.run({async: true});
