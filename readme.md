@@ -21,7 +21,7 @@ const del = require('del');
 
 	console.log('Deleted files:\n', deletedFilePaths.join('\n'));
 	console.log('\n\n');
-	console.log('Deleted directories:\n', deletedDirectoryPaths.join('\n));
+	console.log('Deleted directories:\n', deletedDirectoryPaths.join('\n'));
 })();
 ```
 
