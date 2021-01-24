@@ -67,7 +67,7 @@ Type: `string | string[]`
 
 See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 
-- [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/master/test/test.js)
+- [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/main/test/test.js)
 - [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
 
 #### options
