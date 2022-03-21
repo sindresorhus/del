@@ -14,47 +14,47 @@ const pMap = require('p-map');
 const rimrafP = promisify(rimraf);
 
 const rimrafOptions = {
-  glob: false,
-  unlink: gracefulFs.unlink,
-  unlinkSync: gracefulFs.unlinkSync,
-  chmod: gracefulFs.chmod,
-  chmodSync: gracefulFs.chmodSync,
-  stat: gracefulFs.stat,
-  statSync: gracefulFs.statSync,
-  lstat: gracefulFs.lstat,
-  lstatSync: gracefulFs.lstatSync,
-  rmdir: gracefulFs.rmdir,
-  rmdirSync: gracefulFs.rmdirSync,
-  readdir: gracefulFs.readdir,
-  readdirSync: gracefulFs.readdirSync
+	glob: false,
+	unlink: gracefulFs.unlink,
+	unlinkSync: gracefulFs.unlinkSync,
+	chmod: gracefulFs.chmod,
+	chmodSync: gracefulFs.chmodSync,
+	stat: gracefulFs.stat,
+	statSync: gracefulFs.statSync,
+	lstat: gracefulFs.lstat,
+	lstatSync: gracefulFs.lstatSync,
+	rmdir: gracefulFs.rmdir,
+	rmdirSync: gracefulFs.rmdirSync,
+	readdir: gracefulFs.readdir,
+	readdirSync: gracefulFs.readdirSync
 };
 
 function safeCheck(file, cwd) {
-  if (isPathCwd(file)) {
-    throw new Error(
-      'Cannot delete the current working directory. Can be overridden with the `force` option.'
-    );
-  }
+	if (isPathCwd(file)) {
+		throw new Error(
+			'Cannot delete the current working directory. Can be overridden with the `force` option.'
+		);
+	}
 
-  if (!isPathInside(file, cwd)) {
-    throw new Error(
-      'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
-    );
-  }
+	if (!isPathInside(file, cwd)) {
+		throw new Error(
+			'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.'
+		);
+	}
 }
 
 function normalizePatterns(patterns) {
-  patterns = Array.isArray(patterns) ? patterns : [patterns];
+	patterns = Array.isArray(patterns) ? patterns : [patterns];
 
-  patterns = patterns.map((pattern) => {
-    if (process.platform === 'win32' && isGlob(pattern) === false) {
-      return slash(pattern);
-    }
+	patterns = patterns.map((pattern) => {
+		if (process.platform === 'win32' && isGlob(pattern) === false) {
+			return slash(pattern);
+		}
 
-    return pattern;
-  });
+		return pattern;
+	});
 
-  return patterns;
+	return patterns;
 }
 
 /**
@@ -68,71 +68,71 @@ function normalizePatterns(patterns) {
  * @typedef {typeof delAsync & { sync: typeof delSync }} deprecatedCjsCompatModuleObject
  */
 const normalizeDelOptions = (/** @type {delOptions} */ delOptions) => {
-  const { force = false, dryRun = false, cwd = process.cwd(), ...inputGlobbyOptions } = delOptions;
+	const { force = false, dryRun = false, cwd = process.cwd(), ...inputGlobbyOptions } = delOptions;
 
-  /** @type {GlobbyOptions} */
-  const globbyOptions = {
-    expandDirectories: false,
-    onlyFiles: false,
-    followSymbolicLinks: false,
-    cwd,
-    ...inputGlobbyOptions
-  };
-  return { force, dryRun, cwd, globbyOptions };
+	/** @type {GlobbyOptions} */
+	const globbyOptions = {
+		expandDirectories: false,
+		onlyFiles: false,
+		followSymbolicLinks: false,
+		cwd,
+		...inputGlobbyOptions
+	};
+	return { force, dryRun, cwd, globbyOptions };
 };
 
 const delAsync = async (patterns, delOptions) => {
-  const { force, dryRun, cwd, globbyOptions: options } = normalizeDelOptions(delOptions);
+	const { force, dryRun, cwd, globbyOptions: options } = normalizeDelOptions(delOptions);
 
-  patterns = normalizePatterns(patterns);
+	patterns = normalizePatterns(patterns);
 
-  const files = (await globby(patterns, options)).sort((a, b) => b.localeCompare(a));
+	const files = (await globby(patterns, options)).sort((a, b) => b.localeCompare(a));
 
-  const mapper = async (file) => {
-    file = path.resolve(cwd, file);
+	const mapper = async (file) => {
+		file = path.resolve(cwd, file);
 
-    if (!force) {
-      safeCheck(file, cwd);
-    }
+		if (!force) {
+			safeCheck(file, cwd);
+		}
 
-    if (!dryRun) {
-      await rimrafP(file, rimrafOptions);
-    }
+		if (!dryRun) {
+			await rimrafP(file, rimrafOptions);
+		}
 
-    return file;
-  };
+		return file;
+	};
 
-  const removedFiles = await pMap(files, mapper, options);
+	const removedFiles = await pMap(files, mapper, options);
 
-  removedFiles.sort((a, b) => a.localeCompare(b));
+	removedFiles.sort((a, b) => a.localeCompare(b));
 
-  return removedFiles;
+	return removedFiles;
 };
 
 const delSync = (patterns, delOptions) => {
-  const { force, dryRun, cwd, globbyOptions: options } = normalizeDelOptions(delOptions);
+	const { force, dryRun, cwd, globbyOptions: options } = normalizeDelOptions(delOptions);
 
-  patterns = normalizePatterns(patterns);
+	patterns = normalizePatterns(patterns);
 
-  const files = globby.sync(patterns, options).sort((a, b) => b.localeCompare(a));
+	const files = globby.sync(patterns, options).sort((a, b) => b.localeCompare(a));
 
-  const removedFiles = files.map((file) => {
-    file = path.resolve(cwd, file);
+	const removedFiles = files.map((file) => {
+		file = path.resolve(cwd, file);
 
-    if (!force) {
-      safeCheck(file, cwd);
-    }
+		if (!force) {
+			safeCheck(file, cwd);
+		}
 
-    if (!dryRun) {
-      rimraf.sync(file, rimrafOptions);
-    }
+		if (!dryRun) {
+			rimraf.sync(file, rimrafOptions);
+		}
 
-    return file;
-  });
+		return file;
+	});
 
-  removedFiles.sort((a, b) => a.localeCompare(b));
+	removedFiles.sort((a, b) => a.localeCompare(b));
 
-  return removedFiles;
+	return removedFiles;
 };
 
 exports.delAsync = delAsync;
