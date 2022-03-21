@@ -31,7 +31,7 @@ export type patterns = string | readonly string[];
  * @returns {string[]} The deleted paths.
  * @example
  * ```
- * import { delSync } from 'del';
+ * const { delSync } = require('del');
  * console.log('Deleted files and directories:\n', delSync(['temp/*.js', '!temp/unicorn.js']).join('\n'));
  * ```
  */
@@ -50,7 +50,7 @@ export function delSync(patterns: patterns, delOptions: delOptions): string[];
  * @returns {Promise<string[]>} The deleted paths.
  * @example
  * ```
- * import { delAsync } from 'del';
+ * const { delAsync } = require('del');
  * const deleteAndLogPathes = async (pathesToDelete) => {
  *	const deletedPaths = await del(pathesToDelete);
  *	console.log('Deleted files and directories:\n', deletedPaths.join('\n'));
