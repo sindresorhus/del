@@ -63,7 +63,7 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 
 	patterns = normalizePatterns(patterns);
 
-	const files = (await globby(patterns, options))
+	const files = (await import('globby')).globby(patterns, options))
 		.sort((a, b) => b.localeCompare(a));
 
 	const mapper = async file => {
@@ -87,7 +87,7 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 	return removedFiles;
 };
 
-module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {
+module.exports.sync = async (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {
 	options = {
 		expandDirectories: false,
 		onlyFiles: false,
@@ -98,7 +98,7 @@ module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options
 
 	patterns = normalizePatterns(patterns);
 
-	const files = globby.sync(patterns, options)
+	const files = (await import('globby')).globbySync(patterns, options)
 		.sort((a, b) => b.localeCompare(a));
 
 	const removedFiles = files.map(file => {
