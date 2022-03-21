@@ -1,4 +1,4 @@
-import {GlobbyOptions} from 'globby';
+import {Options as GlobbyOptions} from 'globby';
 
 declare namespace del {
 	interface Options extends GlobbyOptions {
@@ -51,7 +51,7 @@ declare const del: {
 	sync: (
 		patterns: string | readonly string[],
 		options?: del.Options
-	) => string[];
+	) => Promise<string[]>;
 
 	/**
 	Delete files and directories using glob patterns.
