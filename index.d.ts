@@ -34,6 +34,30 @@ declare namespace del {
 		*/
 		readonly concurrency?: number;
 	}
+
+	interface ProgressData {
+		/**
+		Deleted file count.
+		*/
+		deletedFiles: number;
+
+		/**
+		Overall file count.
+		*/
+		totalFiles: number;
+
+		/**
+		Completed percentage. A value between `0` and `1`.
+		*/
+		percent: number;
+	}
+
+	interface ProgressEmitter {
+		on: (
+			event: 'progress',
+			handler: (progress: ProgressData) => void
+		) => Promise<string[]>;
+	}
 }
 
 declare const del: {
@@ -78,7 +102,7 @@ declare const del: {
 	(
 		patterns: string | readonly string[],
 		options?: del.Options
-	): Promise<string[]>;
+	): Promise<string[]> & del.ProgressEmitter;
 };
 
 export = del;

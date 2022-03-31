@@ -9,6 +9,7 @@ const isPathCwd = require('is-path-cwd');
 const isPathInside = require('is-path-inside');
 const rimraf = require('rimraf');
 const pMap = require('p-map');
+const {EventEmitter} = require('events');
 
 const rimrafP = promisify(rimraf);
 
@@ -52,7 +53,7 @@ function normalizePatterns(patterns) {
 	return patterns;
 }
 
-module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {
+module.exports = (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {
 	options = {
 		expandDirectories: false,
 		onlyFiles: false,
@@ -61,30 +62,62 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 		...options
 	};
 
-	patterns = normalizePatterns(patterns);
+	const progressEmitter = new EventEmitter();
 
-	const files = (await globby(patterns, options))
-		.sort((a, b) => b.localeCompare(a));
+	const promise = (async () => {
+		patterns = normalizePatterns(patterns);
 
-	const mapper = async file => {
-		file = path.resolve(cwd, file);
+		const files = (await globby(patterns, options))
+			.sort((a, b) => b.localeCompare(a));
 
-		if (!force) {
-			safeCheck(file, cwd);
+		if (files.length === 0) {
+			progressEmitter.emit('progress', {
+				totalFiles: 0,
+				deletedFiles: 0,
+				percent: 1
+			});
+
+			return [];
 		}
 
-		if (!dryRun) {
-			await rimrafP(file, rimrafOptions);
-		}
+		const mapper = async (file, fileIndex) => {
+			file = path.resolve(cwd, file);
 
-		return file;
+			if (!force) {
+				safeCheck(file, cwd);
+			}
+
+			progressEmitter.emit('progress', {
+				totalFiles: files.length,
+				deletedFiles: fileIndex,
+				percent: fileIndex / files.length
+			});
+
+			if (!dryRun) {
+				await rimrafP(file, rimrafOptions);
+			}
+
+			return file;
+		};
+
+		const removedFiles = await pMap(files, mapper, options);
+		removedFiles.sort((a, b) => a.localeCompare(b));
+
+		progressEmitter.emit('progress', {
+			totalFiles: files.length,
+			deletedFiles: files.length,
+			percent: 1
+		});
+
+		return removedFiles;
+	})();
+
+	promise.on = (...arguments_) => {
+		progressEmitter.on(...arguments_);
+		return promise;
 	};
 
-	const removedFiles = await pMap(files, mapper, options);
-
-	removedFiles.sort((a, b) => a.localeCompare(b));
-
-	return removedFiles;
+	return promise;
 };
 
 module.exports.sync = (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {

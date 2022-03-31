@@ -1,4 +1,5 @@
 import {expectType} from 'tsd';
+import {ProgressEmitter} from './index.d';
 import del = require('.');
 
 const paths = [
@@ -7,13 +8,13 @@ const paths = [
 ];
 
 // Del
-expectType<Promise<string[]>>(del('temp/*.js'));
-expectType<Promise<string[]>>(del(paths));
+expectType<Promise<string[]> & ProgressEmitter>(del('temp/*.js'));
+expectType<Promise<string[]> & ProgressEmitter>(del(paths));
 
-expectType<Promise<string[]>>(del(paths, {force: true}));
-expectType<Promise<string[]>>(del(paths, {dryRun: true}));
-expectType<Promise<string[]>>(del(paths, {concurrency: 20}));
-expectType<Promise<string[]>>(del(paths, {cwd: ''}));
+expectType<Promise<string[]> & ProgressEmitter>(del(paths, {force: true}));
+expectType<Promise<string[]> & ProgressEmitter>(del(paths, {dryRun: true}));
+expectType<Promise<string[]> & ProgressEmitter>(del(paths, {concurrency: 20}));
+expectType<Promise<string[]> & ProgressEmitter>(del(paths, {cwd: ''}));
 
 // Del (sync)
 expectType<string[]>(del.sync('tmp/*.js'));

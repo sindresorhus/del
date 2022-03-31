@@ -108,6 +108,36 @@ Minimum: `1`
 
 Concurrency limit.
 
+## Progress reporting
+
+### del.on('progress', handler)
+
+#### handler(progress)
+
+Type: `Function`
+
+##### progress
+
+```js
+{
+	totalFiles: number,
+	deletedFiles: number,
+	percent: number
+}
+```
+
+- `percent` is a value between `0` and `1`
+
+Note that the `.on()` method is available only right after the initial `del` call, so make sure you add a `handler` before awaiting the promise:
+
+```js
+import del from 'del';
+
+await del(patterns).on('progress', progress => {
+	// …
+});
+```
+
 ## CLI
 
 See [del-cli](https://github.com/sindresorhus/del-cli) for a CLI for this module and [trash-cli](https://github.com/sindresorhus/trash-cli) for a safe version that is suitable for running by hand.
