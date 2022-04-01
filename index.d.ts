@@ -1,6 +1,22 @@
 import {GlobbyOptions} from 'globby';
 
 declare namespace del {
+	interface ProgressData {
+		/**
+		Deleted file count.
+		*/
+		deletedFiles: number;
+
+		/**
+		Overall file count.
+		*/
+		totalFiles: number;
+
+		/**
+		Completed percentage. A value between `0` and `1`.
+		*/
+		percent: number;
+	}
 	interface Options extends GlobbyOptions {
 		/**
 		Allow deleting the current working directory and outside.
@@ -33,30 +49,22 @@ declare namespace del {
 		@default Infinity
 		*/
 		readonly concurrency?: number;
-	}
-
-	interface ProgressData {
-		/**
-		Deleted file count.
-		*/
-		deletedFiles: number;
 
 		/**
-		Overall file count.
-		*/
-		totalFiles: number;
+		Callback function for progress reporting.
 
-		/**
-		Completed percentage. A value between `0` and `1`.
-		*/
-		percent: number;
-	}
+		Called before each file is deleted.
 
-	interface ProgressEmitter {
-		on: (
-			event: 'progress',
-			handler: (progress: ProgressData) => void
-		) => Promise<string[]>;
+		@example
+		```js
+		import del from 'del';
+
+		await del(patterns, {onProgress: (progress) => {
+			// …
+		}});
+		```
+		*/
+		readonly onProgress?: (progress: ProgressData) => void;
 	}
 }
 
@@ -102,7 +110,7 @@ declare const del: {
 	(
 		patterns: string | readonly string[],
 		options?: del.Options
-	): Promise<string[]> & del.ProgressEmitter;
+	): Promise<string[]>;
 };
 
 export = del;

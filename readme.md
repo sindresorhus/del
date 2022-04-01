@@ -108,15 +108,23 @@ Minimum: `1`
 
 Concurrency limit.
 
-## Progress reporting
+##### onProgress
 
-### del.on('progress', handler)
+Type: `(progress: ProgressData) => void`
 
-#### handler(progress)
+Callback function for progress reporting.
 
-Type: `Function`
+Called before each file is deleted.
 
-##### progress
+```js
+import del from 'del';
+
+await del(patterns, {onProgress: (progress) => {
+	// …
+}});
+```
+
+###### ProgressData
 
 ```js
 {
@@ -127,16 +135,6 @@ Type: `Function`
 ```
 
 - `percent` is a value between `0` and `1`
-
-Note that the `.on()` method is available only right after the initial `del` call, so make sure you add a `handler` before awaiting the promise:
-
-```js
-import del from 'del';
-
-await del(patterns).on('progress', progress => {
-	// …
-});
-```
 
 ## CLI
 
