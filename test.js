@@ -357,9 +357,11 @@ test('report delete progress of non-existent file', async t => {
 		report = event;
 	});
 
-	t.is(report.totalFiles, 0);
-	t.is(report.deletedFiles, 0);
-	t.is(report.percent, 1);
+	t.deepEqual(report, {
+		totalFiles: 0,
+		deletedFiles: 0,
+		percent: 1,
+	});
 });
 
 test('report delete progress of single file', async t => {
@@ -369,9 +371,11 @@ test('report delete progress of single file', async t => {
 		report = event;
 	});
 
-	t.is(report.totalFiles, 1);
-	t.is(report.deletedFiles, 1);
-	t.is(report.percent, 1);
+	t.deepEqual(report, {
+		totalFiles: 1,
+		deletedFiles: 1,
+		percent: 1,
+	});
 });
 
 test('report delete progress of multiple files', async t => {
@@ -383,7 +387,9 @@ test('report delete progress of multiple files', async t => {
 		report = event;
 	});
 
-	t.is(report.totalFiles, 4);
-	t.is(report.deletedFiles, 4);
-	t.is(report.percent, 1);
+	t.deepEqual(report, {
+		totalFiles: 4,
+		deletedFiles: 4,
+		percent: 1,
+	});
 });
