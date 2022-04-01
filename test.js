@@ -377,7 +377,7 @@ test('report delete progress of single file', async t => {
 test('report delete progress of multiple files', async t => {
 	let report;
 
-	const sourcePath = process.platform === 'win32' ? path.resolve(`${t.context.tmp}/*`).replace(/\\/g, '/') : t.context.tmp;
+	const sourcePath = process.platform === 'win32' ? path.resolve(`${t.context.tmp}/*`).replace(/\\/g, '/') : `${t.context.tmp}/*`;
 
 	await del(sourcePath, {cwd: __dirname, force: true}).on('progress', event => {
 		report = event;
