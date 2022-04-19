@@ -81,15 +81,15 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), onProgres
 			safeCheck(file, cwd);
 		}
 
+		if (!dryRun) {
+			await rimrafP(file, rimrafOptions);
+		}
+
 		onProgress({
 			totalFiles: files.length,
 			deletedFiles: fileIndex,
 			percent: fileIndex / files.length
 		});
-
-		if (!dryRun) {
-			await rimrafP(file, rimrafOptions);
-		}
 
 		return file;
 	};

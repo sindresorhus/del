@@ -112,14 +112,13 @@ Concurrency limit.
 
 Type: `(progress: ProgressData) => void`
 
-Callback function for progress reporting.
-
-Called before each file is deleted.
+Called after each file is deleted.
 
 ```js
 import del from 'del';
 
-await del(patterns, {onProgress: (progress) => {
+await del(patterns, {
+	onProgress: progress => {
 	// …
 }});
 ```
