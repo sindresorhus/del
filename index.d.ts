@@ -5,12 +5,12 @@ declare namespace del {
 		/**
 		Deleted files and directories count.
 		*/
-		deletedFiles: number;
+		deletedCount: number;
 
 		/**
 		Total files and directories count.
 		*/
-		totalFiles: number;
+		totalCount: number;
 
 		/**
 		Completed percentage. A value between `0` and `1`.

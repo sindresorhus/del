@@ -68,8 +68,8 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), onProgres
 
 	if (files.length === 0) {
 		onProgress({
-			totalFiles: 0,
-			deletedFiles: 0,
+			totalCount: 0,
+			deletedCount: 0,
 			percent: 1
 		});
 	}
@@ -86,8 +86,8 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), onProgres
 		}
 
 		onProgress({
-			totalFiles: files.length,
-			deletedFiles: fileIndex,
+			totalCount: files.length,
+			deletedCount: fileIndex,
 			percent: fileIndex / files.length
 		});
 
@@ -97,8 +97,8 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), onProgres
 	const removedFiles = await pMap(files, mapper, options);
 
 	onProgress({
-		totalFiles: files.length,
-		deletedFiles: files.length,
+		totalCount: files.length,
+		deletedCount: files.length,
 		percent: 1
 	});
 

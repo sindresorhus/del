@@ -358,8 +358,8 @@ test('onProgress option - progress of non-existent file', async t => {
 	}});
 
 	t.deepEqual(report, {
-		totalFiles: 0,
-		deletedFiles: 0,
+		totalCount: 0,
+		deletedCount: 0,
 		percent: 1
 	});
 });
@@ -372,8 +372,8 @@ test('onProgress option - progress of single file', async t => {
 	}});
 
 	t.deepEqual(report, {
-		totalFiles: 1,
-		deletedFiles: 1,
+		totalCount: 1,
+		deletedCount: 1,
 		percent: 1
 	});
 });
@@ -392,8 +392,8 @@ test('onProgress option - progress of multiple files', async t => {
 	});
 
 	t.deepEqual(report, {
-		totalFiles: 4,
-		deletedFiles: 4,
+		totalCount: 4,
+		deletedCount: 4,
 		percent: 1
 	});
 });
