@@ -52,9 +52,7 @@ declare namespace del {
 		readonly concurrency?: number;
 
 		/**
-		Callback function for progress reporting.
-
-		Called before each file is deleted.
+		Called after each file is deleted.
 
 		@example
 		```
