@@ -112,7 +112,7 @@ Concurrency limit.
 
 Type: `(progress: ProgressData) => void`
 
-Called after each file is deleted.
+Called after each file or directory is deleted.
 
 ```js
 import del from 'del';

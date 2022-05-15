@@ -52,13 +52,14 @@ declare namespace del {
 		readonly concurrency?: number;
 
 		/**
-		Called after each file is deleted.
+		Called after each file or directory is deleted.
 
 		@example
 		```
 		import del from 'del';
 
-		await del(patterns, {onProgress: (progress) => {
+		await del(patterns, {
+			onProgress: progress => {
 			// …
 		}});
 		```
