@@ -52,7 +52,7 @@ function normalizePatterns(patterns) {
 	return patterns;
 }
 
-module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) => {
+module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) => {
 	options = {
 		expandDirectories: false,
 		onlyFiles: false,
@@ -66,7 +66,15 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 	const files = (await globby(patterns, options))
 		.sort((a, b) => b.localeCompare(a));
 
-	const mapper = async file => {
+	if (files.length === 0) {
+		onProgress({
+			totalCount: 0,
+			deletedCount: 0,
+			percent: 1
+		});
+	}
+
+	const mapper = async (file, fileIndex) => {
 		file = path.resolve(cwd, file);
 
 		if (!force) {
@@ -77,10 +85,22 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), ...option
 			await rimrafP(file, rimrafOptions);
 		}
 
+		onProgress({
+			totalCount: files.length,
+			deletedCount: fileIndex,
+			percent: fileIndex / files.length
+		});
+
 		return file;
 	};
 
 	const removedFiles = await pMap(files, mapper, options);
+
+	onProgress({
+		totalCount: files.length,
+		deletedCount: files.length,
+		percent: 1
+	});
 
 	removedFiles.sort((a, b) => a.localeCompare(b));
 

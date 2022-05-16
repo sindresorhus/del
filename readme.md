@@ -108,6 +108,33 @@ Minimum: `1`
 
 Concurrency limit.
 
+##### onProgress
+
+Type: `(progress: ProgressData) => void`
+
+Called after each file or directory is deleted.
+
+```js
+import del from 'del';
+
+await del(patterns, {
+	onProgress: progress => {
+	// …
+}});
+```
+
+###### ProgressData
+
+```js
+{
+	totalFiles: number,
+	deletedFiles: number,
+	percent: number
+}
+```
+
+- `percent` is a value between `0` and `1`
+
 ## CLI
 
 See [del-cli](https://github.com/sindresorhus/del-cli) for a CLI for this module and [trash-cli](https://github.com/sindresorhus/trash-cli) for a safe version that is suitable for running by hand.

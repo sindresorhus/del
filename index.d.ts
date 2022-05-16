@@ -1,6 +1,23 @@
 import {GlobbyOptions} from 'globby';
 
 declare namespace del {
+	interface ProgressData {
+		/**
+		Deleted files and directories count.
+		*/
+		deletedCount: number;
+
+		/**
+		Total files and directories count.
+		*/
+		totalCount: number;
+
+		/**
+		Completed percentage. A value between `0` and `1`.
+		*/
+		percent: number;
+	}
+
 	interface Options extends GlobbyOptions {
 		/**
 		Allow deleting the current working directory and outside.
@@ -33,6 +50,21 @@ declare namespace del {
 		@default Infinity
 		*/
 		readonly concurrency?: number;
+
+		/**
+		Called after each file or directory is deleted.
+
+		@example
+		```
+		import del from 'del';
+
+		await del(patterns, {
+			onProgress: progress => {
+			// …
+		}});
+		```
+		*/
+		readonly onProgress?: (progress: ProgressData) => void;
 	}
 }
 

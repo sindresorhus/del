@@ -349,3 +349,51 @@ test('windows can pass relative paths with "\\" - sync', t => {
 
 	t.deepEqual(removeFiles, [nestedFile]);
 });
+
+test('onProgress option - progress of non-existent file', async t => {
+	let report;
+
+	await del('non-existent-directory', {onProgress: event => {
+		report = event;
+	}});
+
+	t.deepEqual(report, {
+		totalCount: 0,
+		deletedCount: 0,
+		percent: 1
+	});
+});
+
+test('onProgress option - progress of single file', async t => {
+	let report;
+
+	await del(t.context.tmp, {cwd: __dirname, force: true, onProgress: event => {
+		report = event;
+	}});
+
+	t.deepEqual(report, {
+		totalCount: 1,
+		deletedCount: 1,
+		percent: 1
+	});
+});
+
+test('onProgress option - progress of multiple files', async t => {
+	let report;
+
+	const sourcePath = process.platform === 'win32' ? path.resolve(`${t.context.tmp}/*`).replace(/\\/g, '/') : `${t.context.tmp}/*`;
+
+	await del(sourcePath, {
+		cwd: __dirname,
+		force: true,
+		onProgress: event => {
+			report = event;
+		}
+	});
+
+	t.deepEqual(report, {
+		totalCount: 4,
+		deletedCount: 4,
+		percent: 1
+	});
+});
