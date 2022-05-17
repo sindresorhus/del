@@ -74,7 +74,9 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), onProgres
 		});
 	}
 
-	const mapper = async (file, fileIndex) => {
+	let deletedCount = 0;
+
+	const mapper = async file => {
 		file = path.resolve(cwd, file);
 
 		if (!force) {
@@ -85,22 +87,18 @@ module.exports = async (patterns, {force, dryRun, cwd = process.cwd(), onProgres
 			await rimrafP(file, rimrafOptions);
 		}
 
+		deletedCount += 1;
+
 		onProgress({
 			totalCount: files.length,
-			deletedCount: fileIndex,
-			percent: fileIndex / files.length
+			deletedCount,
+			percent: deletedCount / files.length
 		});
 
 		return file;
 	};
 
 	const removedFiles = await pMap(files, mapper, options);
-
-	onProgress({
-		totalCount: files.length,
-		deletedCount: files.length,
-		percent: 1
-	});
 
 	removedFiles.sort((a, b) => a.localeCompare(b));
 
