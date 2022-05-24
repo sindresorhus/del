@@ -127,8 +127,8 @@ await del(patterns, {
 
 ```js
 {
-	totalFiles: number,
-	deletedFiles: number,
+	totalCount: number,
+	deletedCount: number,
 	percent: number
 }
 ```
