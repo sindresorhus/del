@@ -6,8 +6,8 @@ Similar to [rimraf](https://github.com/isaacs/rimraf), but with a Promise API an
 
 ## Install
 
-```
-$ npm install del
+```sh
+npm install del
 ```
 
 ## Usage

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import test from 'ava';
-import tempy from 'tempy';
+import {temporaryDirectory} from 'tempy';
 import makeDir from 'make-dir';
 import {deleteAsync, deleteSync} from './index.js';
 
@@ -31,7 +31,7 @@ const fixtures = [
 ];
 
 test.beforeEach(t => {
-	t.context.tmp = tempy.directory();
+	t.context.tmp = temporaryDirectory();
 
 	for (const fixture of fixtures) {
 		makeDir.sync(path.join(t.context.tmp, fixture));

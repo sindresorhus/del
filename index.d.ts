@@ -1,20 +1,20 @@
-import {GlobbyOptions} from 'globby';
+import {Options as GlobbyOptions} from 'globby';
 
 export interface ProgressData {
 	/**
 	Deleted files and directories count.
 	*/
-	deletedCount: number;
+	readonly deletedCount: number;
 
 	/**
 	Total files and directories count.
 	*/
-	totalCount: number;
+	readonly totalCount: number;
 
 	/**
 	Completed percentage. A value between `0` and `1`.
 	*/
-	percent: number;
+	readonly percent: number;
 }
 
 export interface Options extends GlobbyOptions {

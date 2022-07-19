@@ -1,7 +1,7 @@
 import {promisify} from 'node:util';
 import path from 'node:path';
 import process from 'node:process';
-import globby from 'globby';
+import {globby, globbySync} from 'globby';
 import isGlob from 'is-glob';
 import slash from 'slash';
 import gracefulFs from 'graceful-fs';
@@ -116,7 +116,7 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), ...opt
 
 	patterns = normalizePatterns(patterns);
 
-	const files = globby.sync(patterns, options)
+	const files = globbySync(patterns, options)
 		.sort((a, b) => b.localeCompare(a));
 
 	const removedFiles = files.map(file => {
