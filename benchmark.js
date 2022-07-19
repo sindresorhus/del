@@ -1,17 +1,15 @@
-'use strict';
-const path = require('path');
-const Benchmark = require('benchmark');
-const makeDir = require('make-dir');
-const tempy = require('tempy');
-const del = require('.');
+import path from 'node:path';
+import process from 'node:process';
+import Benchmark from 'benchmark';
+import makeDir from 'make-dir';
+import tempy from 'tempy';
+import {deleteAsync, deleteSync} from './index.js';
 
 const suite = new Benchmark.Suite('concurrency');
 
 const temporaryDir = tempy.directory();
 
-const fixtures = Array.from({length: 2000}, (_, index) => {
-	return path.resolve(temporaryDir, (index + 1).toString());
-});
+const fixtures = Array.from({length: 2000}, (_, index) => path.resolve(temporaryDir, (index + 1).toString()));
 
 function createFixtures() {
 	for (const fixture of fixtures) {
@@ -33,7 +31,7 @@ const concurrencies = [
 	400,
 	500,
 	1000,
-	Infinity
+	Number.POSITIVE_INFINITY,
 ];
 
 for (const concurrency of concurrencies) {
@@ -48,26 +46,26 @@ for (const concurrency of concurrencies) {
 			// https://github.com/bestiejs/benchmark.js/issues/136
 			createFixtures();
 
-			const removedFiles = await del(['**/*'], {
+			const removedFiles = await deleteAsync(['**/*'], {
 				cwd: temporaryDir,
-				concurrency
+				concurrency,
 			});
 
 			if (removedFiles.length !== fixtures.length) {
 				const error = new Error(
-					`"${name}": files removed: ${removedFiles.length}, expected: ${fixtures.length}`
+					`"${name}": files removed: ${removedFiles.length}, expected: ${fixtures.length}`,
 				);
 
 				console.error(error);
 
-				del.sync(temporaryDir, {cwd: temporaryDir, force: true});
+				deleteSync(temporaryDir, {cwd: temporaryDir, force: true});
 
 				// eslint-disable-next-line unicorn/no-process-exit
 				process.exit(1);
 			}
 
 			deferred.resolve();
-		}
+		},
 	});
 }
 
@@ -78,6 +76,6 @@ suite
 	.on('complete', function () {
 		console.log(`Fastest is ${this.filter('fastest').map('name')}`);
 
-		del.sync(temporaryDir, {cwd: temporaryDir, force: true});
+		deleteSync(temporaryDir, {cwd: temporaryDir, force: true});
 	})
 	.run({async: true});
