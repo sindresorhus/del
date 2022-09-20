@@ -101,7 +101,7 @@ console.log('Files and directories that would be deleted:\n', deletedPaths.join(
 Type: `boolean`\
 Default: `false`
 
-Delete dot files (files starting with a `.`). This option is passed through to [`glob`](https://github.com/isaacs/node-glob#dots).
+Causes `*` to treat files beginning with a `.` character like any other file. If `false`, dot files will not be matched by `*`. Alternately, `.*` can be used to match dot files. This option is passed through to [`glob`](https://github.com/isaacs/node-glob#dots).
 
 ##### concurrency
 
