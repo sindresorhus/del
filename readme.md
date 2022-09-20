@@ -96,6 +96,13 @@ const deletedPaths = await deleteAsync(['temp/*.js'], {dryRun: true});
 console.log('Files and directories that would be deleted:\n', deletedPaths.join('\n'));
 ```
 
+##### dot
+
+Type: `boolean`\
+Default: `false`
+
+Delete dot files (files starting with a `.`). This option is passed through to [`glob`](https://github.com/isaacs/node-glob#dots).
+
 ##### concurrency
 
 Type: `number`\
