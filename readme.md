@@ -101,7 +101,19 @@ console.log('Files and directories that would be deleted:\n', deletedPaths.join(
 Type: `boolean`\
 Default: `false`
 
-Causes `*` to treat files beginning with a `.` character like any other file. If `false`, dot files will not be matched by `*`. Alternately, `.*` can be used to match dot files. This option is passed through to [`glob`](https://github.com/isaacs/node-glob#dots).
+Allow patterns to match files/folders that begin with a period (`.`). This option is passed through to [fast-glob](https://github.com/mrmlnc/fast-glob#dot).
+
+> :book: Note that an explicit dot in a portion of the pattern will always match dot files.
+```plain
+dir/
+├── .editorconfig
+└── package.json
+```
+
+```js
+deleteSync('*', { dot: false }); // ['package.json']
+deleteSync('*', { dot: true });  // ['.editorconfig', 'package.json']
+```
 
 ##### concurrency
 
