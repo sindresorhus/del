@@ -101,18 +101,24 @@ console.log('Files and directories that would be deleted:\n', deletedPaths.join(
 Type: `boolean`\
 Default: `false`
 
-Allow patterns to match files/folders that begin with a period (`.`). This option is passed through to [fast-glob](https://github.com/mrmlnc/fast-glob#dot).
+Allow patterns to match files/folders that start with a period (`.`).
 
-> :book: Note that an explicit dot in a portion of the pattern will always match dot files.
-```plain
-dir/
+This option is passed through to [`fast-glob`](https://github.com/mrmlnc/fast-glob#dot).
+
+> Note that an explicit dot in a portion of the pattern will always match dot files.
+```
+directory/
 ├── .editorconfig
 └── package.json
 ```
 
 ```js
-deleteSync('*', { dot: false }); // ['package.json']
-deleteSync('*', { dot: true });  // ['.editorconfig', 'package.json']
+import {deleteSync} from 'del';
+
+deleteSync('*', {dot: false});
+//=> ['package.json']
+deleteSync('*', {dot: true});
+//=> ['.editorconfig', 'package.json']
 ```
 
 ##### concurrency
