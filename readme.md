@@ -105,7 +105,10 @@ Allow patterns to match files/folders that start with a period (`.`).
 
 This option is passed through to [`fast-glob`](https://github.com/mrmlnc/fast-glob#dot).
 
-> Note that an explicit dot in a portion of the pattern will always match dot files.
+Note that an explicit dot in a portion of the pattern will always match dot files.
+
+**Example**
+
 ```
 directory/
 ├── .editorconfig
