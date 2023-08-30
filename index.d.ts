@@ -17,7 +17,9 @@ export type ProgressData = {
 	readonly percent: number;
 
 	/**
-	The absolute path of the deleted file or directory. It will not be present if nothing was deleted.
+	The absolute path of the deleted file or directory.
+
+ 	It will not be present if nothing was deleted.
 	*/
 	readonly path?: string;
 };
