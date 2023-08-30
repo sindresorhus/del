@@ -1,6 +1,6 @@
-import {Options as GlobbyOptions} from 'globby';
+import {type Options as GlobbyOptions} from 'globby';
 
-export interface ProgressData {
+export type ProgressData = {
 	/**
 	Deleted files and directories count.
 	*/
@@ -20,9 +20,9 @@ export interface ProgressData {
 	The absolute path of the deleted file or directory. It will not be present if nothing was deleted.
 	*/
 	readonly path?: string;
-}
+};
 
-export interface Options extends GlobbyOptions {
+export type Options = {
 	/**
 	Allow deleting the current working directory and outside.
 
@@ -67,7 +67,7 @@ export interface Options extends GlobbyOptions {
 	```
 	*/
 	readonly onProgress?: (progress: ProgressData) => void;
-}
+} & GlobbyOptions;
 
 /**
 Delete files and directories using glob patterns.
