@@ -17,7 +17,7 @@ export interface ProgressData {
 	readonly percent: number;
 
 	/**
-	Path of deleted file
+	The absolute path of the deleted file or directory. It will not be present if nothing was deleted.
 	*/
 	readonly path?: string;
 }

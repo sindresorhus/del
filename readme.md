@@ -159,7 +159,7 @@ await deleteAsync(patterns, {
 ```
 
 - `percent` is a value between `0` and `1`
-- `path` will not be present if no files were deleted
+- `path` is the absolute path of the deleted file or directory. It will not be present if nothing was deleted.
 
 ## CLI
 
