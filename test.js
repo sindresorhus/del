@@ -378,12 +378,12 @@ test('onProgress option - progress of single file', async t => {
 		totalCount: 1,
 		deletedCount: 1,
 		percent: 1,
-		path: t.context.tmp
+		path: t.context.tmp,
 	});
 });
 
 test('onProgress option - progress of multiple files', async t => {
-	let reports = [];
+	const reports = [];
 
 	const sourcePath = process.platform === 'win32' ? path.resolve(`${t.context.tmp}/*`).replace(/\\/g, '/') : `${t.context.tmp}/*`;
 
