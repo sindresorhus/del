@@ -93,6 +93,7 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 			totalCount: files.length,
 			deletedCount,
 			percent: deletedCount / files.length,
+			path: file
 		});
 
 		return file;

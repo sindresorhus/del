@@ -1,4 +1,4 @@
-import {Options as GlobbyOptions} from 'globby';
+import { Options as GlobbyOptions } from 'globby';
 
 export interface ProgressData {
 	/**
@@ -15,6 +15,11 @@ export interface ProgressData {
 	Completed percentage. A value between `0` and `1`.
 	*/
 	readonly percent: number;
+
+	/**
+	Path of deleted file
+	*/
+	readonly path?: string;
 }
 
 export interface Options extends GlobbyOptions {
