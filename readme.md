@@ -153,11 +153,13 @@ await deleteAsync(patterns, {
 {
 	totalCount: number,
 	deletedCount: number,
-	percent: number
+	percent: number,
+	path?: string
 }
 ```
 
 - `percent` is a value between `0` and `1`
+- `path` is the absolute path of the deleted file or directory. It will not be present if nothing was deleted.
 
 ## CLI
 

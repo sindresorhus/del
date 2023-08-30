@@ -378,11 +378,12 @@ test('onProgress option - progress of single file', async t => {
 		totalCount: 1,
 		deletedCount: 1,
 		percent: 1,
+		path: t.context.tmp,
 	});
 });
 
 test('onProgress option - progress of multiple files', async t => {
-	let report;
+	const reports = [];
 
 	const sourcePath = process.platform === 'win32' ? path.resolve(`${t.context.tmp}/*`).replace(/\\/g, '/') : `${t.context.tmp}/*`;
 
@@ -390,13 +391,14 @@ test('onProgress option - progress of multiple files', async t => {
 		cwd: __dirname,
 		force: true,
 		onProgress(event) {
-			report = event;
+			reports.push(event);
 		},
 	});
 
-	t.deepEqual(report, {
-		totalCount: 4,
-		deletedCount: 4,
-		percent: 1,
-	});
+	t.is(reports.length, 4);
+	t.deepEqual(reports.map(r => r.totalCount), [4, 4, 4, 4]);
+	t.deepEqual(reports.map(r => r.deletedCount).sort(), [1, 2, 3, 4]);
+
+	const expectedPaths = ['1', '2', '3', '4'].map(x => path.join(t.context.tmp, `${x}.tmp`));
+	t.deepEqual(reports.map(r => r.path).sort(), expectedPaths.sort());
 });

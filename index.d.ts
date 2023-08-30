@@ -15,6 +15,13 @@ export type ProgressData = {
 	Completed percentage. A value between `0` and `1`.
 	*/
 	readonly percent: number;
+
+	/**
+	The absolute path of the deleted file or directory.
+
+ 	It will not be present if nothing was deleted.
+	*/
+	readonly path?: string;
 };
 
 export type Options = {
