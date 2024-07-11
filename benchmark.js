@@ -1,7 +1,7 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import Benchmark from 'benchmark';
-import {makeDirectorySync} from 'make-dir';
 import {temporaryDirectory} from 'tempy';
 import {deleteAsync, deleteSync} from './index.js';
 
@@ -13,7 +13,7 @@ const fixtures = Array.from({length: 2000}, (_, index) => path.resolve(temporary
 
 function createFixtures() {
 	for (const fixture of fixtures) {
-		makeDirectorySync(path.resolve(temporaryDirectoryPath, fixture));
+		fs.mkdirSync(path.resolve(temporaryDirectoryPath, fixture), {recursive: true});
 	}
 }
 
