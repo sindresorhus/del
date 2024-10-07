@@ -5,12 +5,7 @@ import isGlob from 'is-glob';
 import isPathCwd from 'is-path-cwd';
 import isPathInside from 'is-path-inside';
 import pMap from 'p-map';
-import {rimraf} from 'rimraf';
 import slash from 'slash';
-
-const rimrafOptions = {
-	glob: false,
-};
 
 function safeCheck(file, cwd) {
 	if (isPathCwd(file)) {
@@ -68,7 +63,7 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 		}
 
 		if (!dryRun) {
-			await fs.rmSync(file, { recursive: true, force: true });
+			await fs.rmSync(file, {recursive: true, force: true});
 		}
 
 		deletedCount += 1;
@@ -112,7 +107,7 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), ...opt
 		}
 
 		if (!dryRun) {
-			rimraf.sync(file, rimrafOptions);
+			fs.rmSync(file, {recursive: true, force: true});
 		}
 
 		return file;
