@@ -68,7 +68,7 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 		}
 
 		if (!dryRun) {
-			await rimraf(file, rimrafOptions);
+			await fs.rmSync(file, { recursive: true, force: true });
 		}
 
 		deletedCount += 1;
