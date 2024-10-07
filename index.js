@@ -1,32 +1,13 @@
-import {promisify} from 'node:util';
+import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import {globby, globbySync} from 'globby';
 import isGlob from 'is-glob';
-import slash from 'slash';
-import gracefulFs from 'graceful-fs';
 import isPathCwd from 'is-path-cwd';
 import isPathInside from 'is-path-inside';
-import rimraf from 'rimraf';
 import pMap from 'p-map';
-
-const rimrafP = promisify(rimraf);
-
-const rimrafOptions = {
-	glob: false,
-	unlink: gracefulFs.unlink,
-	unlinkSync: gracefulFs.unlinkSync,
-	chmod: gracefulFs.chmod,
-	chmodSync: gracefulFs.chmodSync,
-	stat: gracefulFs.stat,
-	statSync: gracefulFs.statSync,
-	lstat: gracefulFs.lstat,
-	lstatSync: gracefulFs.lstatSync,
-	rmdir: gracefulFs.rmdir,
-	rmdirSync: gracefulFs.rmdirSync,
-	readdir: gracefulFs.readdir,
-	readdirSync: gracefulFs.readdirSync,
-};
+import slash from 'slash';
 
 function safeCheck(file, cwd) {
 	if (isPathCwd(file)) {
@@ -84,7 +65,7 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 		}
 
 		if (!dryRun) {
-			await rimrafP(file, rimrafOptions);
+			await fsPromises.rm(file, {recursive: true, force: true});
 		}
 
 		deletedCount += 1;
@@ -128,7 +109,7 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), ...opt
 		}
 
 		if (!dryRun) {
-			rimraf.sync(file, rimrafOptions);
+			fs.rmSync(file, {recursive: true, force: true});
 		}
 
 		return file;

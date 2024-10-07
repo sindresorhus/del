@@ -1,10 +1,9 @@
-import {fileURLToPath} from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import {fileURLToPath} from 'node:url';
 import test from 'ava';
 import {temporaryDirectory} from 'tempy';
-import makeDir from 'make-dir';
 import {deleteAsync, deleteSync} from './index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -34,7 +33,7 @@ test.beforeEach(t => {
 	t.context.tmp = temporaryDirectory();
 
 	for (const fixture of fixtures) {
-		makeDir.sync(path.join(t.context.tmp, fixture));
+		fs.mkdirSync(path.join(t.context.tmp, fixture), {recursive: true});
 	}
 });
 
@@ -125,7 +124,7 @@ test('does not throw EINVAL - async', async t => {
 
 	let count = 0;
 	while (count !== totalAttempts) {
-		makeDir.sync(nestedFile);
+		fs.mkdirSync(nestedFile, {recursive: true});
 
 		// eslint-disable-next-line no-await-in-loop
 		const removed = await deleteAsync('**/*', {
@@ -160,7 +159,7 @@ test('does not throw EINVAL - sync', t => {
 
 	let count = 0;
 	while (count !== totalAttempts) {
-		makeDir.sync(nestedFile);
+		fs.mkdirSync(nestedFile, {recursive: true});
 
 		const removed = deleteSync('**/*', {
 			cwd: t.context.tmp,
@@ -337,7 +336,7 @@ test('windows can pass absolute paths with "\\" - sync', t => {
 
 test('windows can pass relative paths with "\\" - async', async t => {
 	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
-	makeDir.sync(nestedFile);
+	fs.mkdirSync(nestedFile, {recursive: true});
 
 	const removeFiles = await deleteAsync([nestedFile], {cwd: t.context.tmp, dryRun: true});
 
@@ -346,7 +345,7 @@ test('windows can pass relative paths with "\\" - async', async t => {
 
 test('windows can pass relative paths with "\\" - sync', t => {
 	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
-	makeDir.sync(nestedFile);
+	fs.mkdirSync(nestedFile, {recursive: true});
 
 	const removeFiles = deleteSync([nestedFile], {cwd: t.context.tmp, dryRun: true});
 
@@ -356,9 +355,11 @@ test('windows can pass relative paths with "\\" - sync', t => {
 test('onProgress option - progress of non-existent file', async t => {
 	let report;
 
-	await deleteAsync('non-existent-directory', {onProgress(event) {
-		report = event;
-	}});
+	await deleteAsync('non-existent-directory', {
+		onProgress(event) {
+			report = event;
+		},
+	});
 
 	t.deepEqual(report, {
 		totalCount: 0,
@@ -370,9 +371,11 @@ test('onProgress option - progress of non-existent file', async t => {
 test('onProgress option - progress of single file', async t => {
 	let report;
 
-	await deleteAsync(t.context.tmp, {cwd: __dirname, force: true, onProgress(event) {
-		report = event;
-	}});
+	await deleteAsync(t.context.tmp, {
+		cwd: __dirname, force: true, onProgress(event) {
+			report = event;
+		},
+	});
 
 	t.deepEqual(report, {
 		totalCount: 1,
@@ -385,7 +388,7 @@ test('onProgress option - progress of single file', async t => {
 test('onProgress option - progress of multiple files', async t => {
 	const reports = [];
 
-	const sourcePath = process.platform === 'win32' ? path.resolve(`${t.context.tmp}/*`).replace(/\\/g, '/') : `${t.context.tmp}/*`;
+	const sourcePath = process.platform === 'win32' ? path.resolve(`${t.context.tmp}/*`).replaceAll('\\', '/') : `${t.context.tmp}/*`;
 
 	await deleteAsync(sourcePath, {
 		cwd: __dirname,

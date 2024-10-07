@@ -14,7 +14,7 @@
 	"exports": "./index.js",
 	"types": "./index.d.ts",
 	"engines": {
-		"node": ">=14.16"
+		"node": ">=18"
 	},
 	"scripts": {
 		"test": "xo && ava && tsd",
@@ -49,30 +49,23 @@
 		"filesystem"
 	],
 	"dependencies": {
-		"globby": "^13.1.2",
-		"graceful-fs": "^4.2.10",
+		"globby": "^14.0.1",
 		"is-glob": "^4.0.3",
 		"is-path-cwd": "^3.0.0",
 		"is-path-inside": "^4.0.0",
-		"p-map": "^5.5.0",
-		"rimraf": "^3.0.2",
-		"slash": "^4.0.0"
+		"p-map": "^7.0.2",
+		"rimraf": "^5.0.7",
+		"slash": "^5.1.0"
 	},
 	"devDependencies": {
-		"ava": "^4.3.1",
+		"ava": "^6.1.3",
 		"benchmark": "^2.1.4",
-		"make-dir": "^3.1.0",
-		"tempy": "^3.0.0",
-		"tsd": "^0.22.0",
-		"xo": "^0.56.0"
+		"tempy": "^3.1.0",
+		"tsd": "^0.31.0",
+		"xo": "^0.58.0"
 	},
 	"ava": {
 		"serial": true,
 		"workerThreads": false
-	},
-	"xo": {
-		"rules": {
-			"unicorn/prefer-string-replace-all": "off"
-		}
 	}
 }
