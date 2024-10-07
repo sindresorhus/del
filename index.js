@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import {globby, globbySync} from 'globby';
@@ -63,7 +65,7 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 		}
 
 		if (!dryRun) {
-			await fs.rmSync(file, {recursive: true, force: true});
+			await fsPromises.rm(file, {recursive: true, force: true});
 		}
 
 		deletedCount += 1;
