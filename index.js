@@ -8,14 +8,15 @@ import isPathCwd from 'is-path-cwd';
 import isPathInside from 'is-path-inside';
 import pMap from 'p-map';
 import slash from 'slash';
+import {PresentableError} from 'presentable-error';
 
 function safeCheck(file, cwd) {
 	if (isPathCwd(file)) {
-		throw new Error('Cannot delete the current working directory. Can be overridden with the `force` option.');
+		throw new PresentableError('Cannot delete the current working directory. Can be overridden with the `force` option.');
 	}
 
 	if (!isPathInside(file, cwd)) {
-		throw new Error('Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.');
+		throw new PresentableError('Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.');
 	}
 }
 

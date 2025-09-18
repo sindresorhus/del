@@ -57,6 +57,7 @@
 		"is-path-cwd": "^3.0.0",
 		"is-path-inside": "^4.0.0",
 		"p-map": "^7.0.2",
+		"presentable-error": "^0.0.1",
 		"slash": "^5.1.0"
 	},
 	"devDependencies": {
