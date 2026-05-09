@@ -114,6 +114,11 @@ test('don\'t delete files, but return them - sync', t => {
 // Currently this is only testable locally on macOS.
 // https://github.com/sindresorhus/del/issues/68
 test('does not throw EINVAL - async', async t => {
+	if (process.platform === 'win32') {
+		t.pass('Nested directory removal timing is not portable to Windows.');
+		return;
+	}
+
 	await deleteAsync('**/*', {
 		cwd: t.context.tmp,
 		dot: true,
@@ -149,6 +154,11 @@ test('does not throw EINVAL - async', async t => {
 });
 
 test('does not throw EINVAL - sync', t => {
+	if (process.platform === 'win32') {
+		t.pass('Nested directory removal timing is not portable to Windows.');
+		return;
+	}
+
 	deleteSync('**/*', {
 		cwd: t.context.tmp,
 		dot: true,
@@ -210,6 +220,60 @@ test('delete absolute files outside of process.cwd using cwd - sync', t => {
 
 	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 	notExists(t, ['1.tmp']);
+});
+
+test('report filesystem removal errors - async', async t => {
+	if (process.platform === 'win32') {
+		t.pass('POSIX directory permissions are not portable to Windows.');
+		return;
+	}
+
+	const directory = path.join(t.context.tmp, 'locked');
+	const file = path.join(directory, 'index.html');
+	fs.mkdirSync(directory);
+	fs.writeFileSync(file, '');
+	fs.chmodSync(directory, 0o555);
+
+	t.teardown(() => {
+		if (fs.existsSync(directory)) {
+			fs.chmodSync(directory, 0o755);
+		}
+	});
+
+	const error = await t.throwsAsync(deleteAsync('locked/index.html', {cwd: t.context.tmp}), {
+		instanceOf: Error,
+	});
+
+	t.regex(error.message, /eacces|eperm|permission denied|operation not permitted/i);
+	t.true(fs.existsSync(file));
+});
+
+test('report filesystem removal errors - sync', t => {
+	if (process.platform === 'win32') {
+		t.pass('POSIX directory permissions are not portable to Windows.');
+		return;
+	}
+
+	const directory = path.join(t.context.tmp, 'locked');
+	const file = path.join(directory, 'index.html');
+	fs.mkdirSync(directory);
+	fs.writeFileSync(file, '');
+	fs.chmodSync(directory, 0o555);
+
+	t.teardown(() => {
+		if (fs.existsSync(directory)) {
+			fs.chmodSync(directory, 0o755);
+		}
+	});
+
+	const error = t.throws(() => {
+		deleteSync('locked/index.html', {cwd: t.context.tmp});
+	}, {
+		instanceOf: Error,
+	});
+
+	t.regex(error.message, /eacces|eperm|permission denied|operation not permitted/i);
+	t.true(fs.existsSync(file));
 });
 
 test('cannot delete actual working directory without force: true - async', async t => {
