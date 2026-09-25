@@ -10,16 +10,16 @@ import pMap from 'p-map';
 import slash from 'slash';
 import {PresentableError} from 'presentable-error';
 
-function safeCheck(file, cwd) {
+// A symlink inside the working directory can reach anywhere, so the real paths
+// are checked too, not just the literal ones.
+function safeCheck(file, cwd, realCwd) {
 	// The `cwd` option can point somewhere else than the process working
 	// directory, and deleting it is the same mistake either way.
 	if (isPathCwd(file) || path.relative(cwd, file) === '') {
 		throw new PresentableError('Cannot delete the current working directory. Can be overridden with the `force` option.');
 	}
 
-	// A symlink inside the working directory can point anywhere, so the real
-	// paths are checked as well and not just the literal ones.
-	if (!isPathInside(file, cwd) || !isRealPathInside(file, cwd)) {
+	if (!isPathInside(file, cwd) || !isRealPathInside(file, realCwd)) {
 		throw new PresentableError('Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.');
 	}
 }
@@ -31,9 +31,9 @@ function safeCheck(file, cwd) {
 // A symlink is unlinked rather than followed, so where it points does not
 // matter, only where it lives. Anything reached *through* a link is a real
 // path, which is the case that has to be caught.
-function isRealPathInside(file, cwd) {
+function isRealPathInside(file, realCwd) {
 	try {
-		return fs.lstatSync(file).isSymbolicLink() || isPathInside(fs.realpathSync(file), fs.realpathSync(cwd));
+		return fs.lstatSync(file).isSymbolicLink() || isPathInside(fs.realpathSync(file), realCwd);
 	} catch {
 		return true;
 	}
@@ -72,9 +72,26 @@ function resolveFiles(patterns, cwd) {
 // is refused before anything is deleted rather than after. The paths are sorted
 // with the parents last, so checking them one at a time while deleting would
 // report the refusal only once the rest of the working directory was gone.
+//
+// This is a snapshot rather than a lock, so a tree that changes while `del` runs
+// can still be deleted differently than it was checked. The check narrows that
+// window, it does not close it.
+//
+// The real `cwd` is resolved once and passed along, as it would otherwise be
+// walked again for every single path.
 function safeCheckAll(files, cwd) {
+	const realCwd = realpathOrSelf(cwd);
+
 	for (const file of files) {
-		safeCheck(file, cwd);
+		safeCheck(file, cwd, realCwd);
+	}
+}
+
+function realpathOrSelf(file) {
+	try {
+		return fs.realpathSync(file);
+	} catch {
+		return file;
 	}
 }
 
