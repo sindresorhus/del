@@ -1076,4 +1076,67 @@ test('deletes a project whose node_modules are symlinks - sync', () => {
 	]);
 });
 
+// The three defaults `del` moves away from globby's are defaults, not just
+// values, so an explicit `undefined` must not hand them back to globby. A
+// config object spread in from elsewhere carries those keys with `undefined`
+// values often enough to matter.
+const undefinedDefaultFixture = () => {
+	fs.mkdirSync(path.join(temporaryPath, 'dist/sub'), {recursive: true});
+	fs.mkdirSync(path.join(temporaryPath, 'subdir'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'top.txt'), '');
+	fs.mkdirSync(path.join(temporaryPath, 'link'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'link/target.js'), '');
+	fs.symlinkSync(path.join(temporaryPath, 'link'), path.join(temporaryPath, 'linked'), 'dir');
+};
+
+// `*` at the top level, with every directory included and no link followed.
+const undefinedDefaultTopLevel = ['.dot.tmp', '1.tmp', '2.tmp', '3.tmp', '4.tmp', 'dist', 'link', 'linked', 'subdir', 'top.txt'];
+
+const undefinedDefaultCases = [
+	['expandDirectories', 'dist', {expandDirectories: undefined}, ['dist']],
+	['onlyFiles', '*', {onlyFiles: undefined}, undefinedDefaultTopLevel],
+	// `link/target.js` is only reachable by following `linked`, so its presence
+	// in the result is what shows the option took effect.
+	['followSymbolicLinks', '*', {followSymbolicLinks: undefined}, undefinedDefaultTopLevel],
+];
+
+test('an undefined option does not restore the globby default - async', symlinkTestOptions, async () => {
+	undefinedDefaultFixture();
+
+	for (const [name, pattern, options, expected] of undefinedDefaultCases) {
+		// eslint-disable-next-line no-await-in-loop
+		const removed = await deleteAsync(pattern, {
+			cwd: temporaryPath,
+			dot: true,
+			dryRun: true,
+			...options,
+		});
+
+		assert.deepEqual(
+			removed.map(file => path.relative(temporaryPath, file)),
+			expected,
+			`${name}: undefined must behave like false`,
+		);
+	}
+});
+
+test('an undefined option does not restore the globby default - sync', symlinkTestOptions, () => {
+	undefinedDefaultFixture();
+
+	for (const [name, pattern, options, expected] of undefinedDefaultCases) {
+		const removed = deleteSync(pattern, {
+			cwd: temporaryPath,
+			dot: true,
+			dryRun: true,
+			...options,
+		});
+
+		assert.deepEqual(
+			removed.map(file => path.relative(temporaryPath, file)),
+			expected,
+			`${name}: undefined must behave like false`,
+		);
+	}
+});
+
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */

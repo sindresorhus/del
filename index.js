@@ -78,18 +78,24 @@ function safeCheckAll(files, cwd) {
 	}
 }
 
-export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) {
-	options = {
-		expandDirectories: false,
-		onlyFiles: false,
-		followSymbolicLinks: false,
+// Globby falls back to its own default for an `undefined` value, so merging
+// del's defaults underneath the options would let an explicit `undefined` hand
+// the decision back to globby and undo them. A config object spread in from
+// elsewhere carries such keys often enough to matter.
+function createOptions({expandDirectories, onlyFiles, followSymbolicLinks, ...options}, cwd) {
+	return {
+		expandDirectories: expandDirectories ?? false,
+		onlyFiles: onlyFiles ?? false,
+		followSymbolicLinks: followSymbolicLinks ?? false,
 		cwd,
 		...options,
 	};
+}
 
+export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) {
 	patterns = normalizePatterns(patterns);
 
-	const files = resolveFiles(await globby(patterns, options), cwd);
+	const files = resolveFiles(await globby(patterns, createOptions(options, cwd)), cwd);
 
 	if (!force) {
 		safeCheckAll(files, cwd);
@@ -128,17 +134,9 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 }
 
 export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) {
-	options = {
-		expandDirectories: false,
-		onlyFiles: false,
-		followSymbolicLinks: false,
-		cwd,
-		...options,
-	};
-
 	patterns = normalizePatterns(patterns);
 
-	const files = resolveFiles(globbySync(patterns, options), cwd);
+	const files = resolveFiles(globbySync(patterns, createOptions(options, cwd)), cwd);
 
 	if (!force) {
 		safeCheckAll(files, cwd);
