@@ -49,7 +49,7 @@ export type Options = {
 	readonly dryRun?: boolean;
 
 	/**
-	Concurrency limit. `deleteAsync` applies it to the deletions, where `deleteSync` deletes one path at a time. Both pass it on to globby, where it limits how many directories are read at once. Minimum: `1`.
+	Concurrency limit. `deleteAsync` applies it to the deletions and, through globby, to how many directories are read at once. `deleteSync` deletes one path at a time and globby reads synchronously, so the option has no effect there. Minimum: `1`.
 
 	The paths are ordered so that a directory is removed after the paths inside it, but that order only holds as far as `concurrency` reaches, so a symlink that is the only route to its target can leave files behind. Use `1` if that matters.
 

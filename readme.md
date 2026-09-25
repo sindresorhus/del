@@ -46,7 +46,7 @@ To delete all subdirectories inside `public/`, you can do:
 deleteSync(['public/*/']);
 ```
 
-A pattern made up of nothing but negations matches everything, so this deletes the whole tree except `keep.js`:
+A pattern made up of nothing but negations matches everything, so this deletes the whole tree apart from `keep.js` and any dot files:
 
 ```js
 deleteSync(['!keep.js']);
@@ -76,6 +76,26 @@ See the supported [glob patterns](https://github.com/sindresorhus/globby#globbin
 
 - [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/main/test/test.js)
 - [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
+
+A pattern is a glob, so a filename that contains a glob metacharacter has to escape it. These are the two that fail silently, matching nothing at all rather than the name you meant:
+
+```js
+deleteSync(['report (1).pdf']);
+//=> []
+
+deleteSync(['report [(]1[)].pdf']);
+//=> ['/…/report (1).pdf']
+
+deleteSync(['[test-abc]']);
+//=> []
+
+deleteSync(['[[]test-abc[]]']);
+//=> ['/…/[test-abc]']
+```
+
+A character class is used rather than a backslash because `del` rewrites backslashes to forward-slashes on Windows, which would eat the escape.
+
+The other metacharacters are less surprising: `report [1].pdf` and `report {1}.pdf` do match their own names, but `report *1*.pdf` also matches `report 11.pdf`.
 
 #### options
 
@@ -127,13 +147,13 @@ directory/
 ```js
 import {deleteSync} from 'del';
 
-deleteSync('*', {dot: false});
+deleteSync('*', {dot: false, dryRun: true});
 //=> ['/…/package.json']
-deleteSync('*', {dot: true});
+deleteSync('*', {dot: true, dryRun: true});
 //=> ['/…/.editorconfig', '/…/package.json']
 ```
 
-The two calls are independent, as the first one deletes `package.json` before the second one runs.
+Without `dryRun` the first call would delete `package.json`, so the second would only return `.editorconfig`.
 
 ##### gitignore
 
@@ -157,7 +177,7 @@ Type: `number`\
 Default: `Infinity`\
 Minimum: `1`
 
-Concurrency limit. `deleteAsync` applies it to the deletions, where `deleteSync` deletes one path at a time. Both pass it on to [globby](https://github.com/sindresorhus/globby#options), where it limits how many directories are read at once, so a low value also slows down finding the files.
+Concurrency limit. `deleteAsync` applies it to the deletions and, through [globby](https://github.com/sindresorhus/globby#options), to how many directories are read at once, so a low value also slows down finding the files. `deleteSync` deletes one path at a time and globby reads synchronously, so the option has no effect there.
 
 The paths are ordered so that a directory is always removed after the paths inside it, but that order only holds as far as `concurrency` reaches. A symlink that is the only route to its target can be unlinked before the paths below it are removed, which leaves them on disk while still reporting them as deleted. It leaves files behind rather than removing too much, and `concurrency: 1` avoids it.
 

@@ -47,7 +47,16 @@ for (const concurrency of concurrencies) {
 			// https://github.com/bestiejs/benchmark.js/issues/136
 			createFixtures();
 
-			const removedFiles = await deleteAsync(['**/*'], {
+			// The paths are passed directly rather than as a `**\/*` pattern, so
+			// that globbing the tree is not part of what is timed. Globbing costs
+			// more than the deletions do and is identical every run, so including
+			// it flattens the difference the suite is named after.
+			//
+			// `createFixtures` above is still timed, as `setup()` is not called
+			// after every defer, so the reported ops/sec stays well short of the
+			// speedup in the deletions themselves. Read the timings, not the
+			// ops/sec, when comparing concurrency levels.
+			const removedFiles = await deleteAsync(fixtures, {
 				cwd: temporaryDirectoryPath,
 				concurrency,
 			});
