@@ -47,7 +47,43 @@ beforeEach(() => {
 // Tests that guard against deleting the working directory move into it.
 afterEach(() => {
 	process.chdir(processCwd);
+
+	if (!outsideTemporaryPath) {
+		return;
+	}
+
+	fs.rmSync(outsideTemporaryPath, {recursive: true, force: true});
+	outsideTemporaryPath = undefined;
 });
+
+// A directory next to `temporaryPath`, so it is reachable through a symlink but
+// is still outside of the working directory. Created on demand, as most tests
+// do not need it.
+let outsideTemporaryPath;
+
+function createOutsideDirectory(name) {
+	if (!outsideTemporaryPath) {
+		const root = fs.mkdtempSync(path.join(os.tmpdir(), 'del-outside-'));
+		outsideTemporaryPath = fs.realpathSync(root);
+	}
+
+	const directory = path.join(outsideTemporaryPath, name);
+	fs.mkdirSync(directory, {recursive: true});
+	return directory;
+}
+
+// Creates `<temporaryPath>/a/<name>` as a symlink pointing at a fresh directory
+// outside of the working directory, and returns the path of the linked file.
+function createSymlinkToOutside(name) {
+	const target = createOutsideDirectory(name);
+	fs.mkdirSync(path.join(target, 'secret'), {recursive: true});
+
+	const link = path.join(temporaryPath, 'a', name);
+	fs.mkdirSync(path.dirname(link), {recursive: true});
+	fs.symlinkSync(target, link, 'dir');
+
+	return path.join(target, 'secret');
+}
 
 function exists(files) {
 	for (const file of files) {
@@ -471,6 +507,164 @@ test('onProgress option - progress of multiple files - sync', () => {
 
 	const expectedPaths = ['1', '2', '3', '4'].map(x => path.join(temporaryPath, `${x}.tmp`));
 	assert.deepEqual(reports.map(r => r.path).toSorted((a, b) => a.localeCompare(b)), expectedPaths.toSorted((a, b) => a.localeCompare(b)));
+});
+
+// Symlink creation needs elevated privileges on Windows.
+const symlinkTestOptions = process.platform === 'win32'
+	? {skip: 'Creating symlinks requires elevated privileges on Windows'}
+	: {};
+
+test('cannot delete files outside cwd through a symlink - async', symlinkTestOptions, async () => {
+	const outsideFile = createSymlinkToOutside('escape');
+
+	await assert.rejects(deleteAsync('a/escape/**', {cwd: temporaryPath}), {
+		message: cannotDeleteOutsideCwdMessage,
+	});
+
+	assert.ok(fs.existsSync(outsideFile));
+});
+
+test('cannot delete files outside cwd through a symlink - sync', symlinkTestOptions, () => {
+	const outsideFile = createSymlinkToOutside('escape');
+
+	assert.throws(() => {
+		deleteSync('a/escape/**', {cwd: temporaryPath});
+	}, {
+		message: cannotDeleteOutsideCwdMessage,
+	});
+
+	assert.ok(fs.existsSync(outsideFile));
+});
+
+test('cannot delete files outside cwd through a followed symlink - async', symlinkTestOptions, async () => {
+	const outsideFile = createSymlinkToOutside('escape');
+
+	await assert.rejects(deleteAsync('a/**', {cwd: temporaryPath, followSymbolicLinks: true}), {
+		message: cannotDeleteOutsideCwdMessage,
+	});
+
+	assert.ok(fs.existsSync(outsideFile));
+});
+
+test('cannot delete files outside cwd through a followed symlink - sync', symlinkTestOptions, () => {
+	const outsideFile = createSymlinkToOutside('escape');
+
+	assert.throws(() => {
+		deleteSync('a/**', {cwd: temporaryPath, followSymbolicLinks: true});
+	}, {
+		message: cannotDeleteOutsideCwdMessage,
+	});
+
+	assert.ok(fs.existsSync(outsideFile));
+});
+
+test('can delete files outside cwd through a symlink with force: true - async', symlinkTestOptions, async () => {
+	const outsideFile = createSymlinkToOutside('escape');
+
+	const removed = await deleteAsync('a/escape/**', {cwd: temporaryPath, force: true});
+
+	assert.deepEqual(removed, [path.join(temporaryPath, 'a/escape/secret')]);
+	assert.ok(!fs.existsSync(outsideFile));
+});
+
+test('can delete files outside cwd through a symlink with force: true - sync', symlinkTestOptions, () => {
+	const outsideFile = createSymlinkToOutside('escape');
+
+	const removed = deleteSync('a/escape/**', {cwd: temporaryPath, force: true});
+
+	assert.deepEqual(removed, [path.join(temporaryPath, 'a/escape/secret')]);
+	assert.ok(!fs.existsSync(outsideFile));
+});
+
+// A symlink loop cannot be resolved, but it must not stop the deletion.
+function createSymlinkLoop() {
+	const loop = path.join(temporaryPath, 'loop');
+	fs.mkdirSync(loop, {recursive: true});
+	fs.symlinkSync(path.join(loop, 'b'), path.join(loop, 'a'), 'dir');
+	fs.symlinkSync(path.join(loop, 'a'), path.join(loop, 'b'), 'dir');
+	return loop;
+}
+
+test('deletes a symlink loop - async', symlinkTestOptions, async () => {
+	const loop = createSymlinkLoop();
+
+	const removed = await deleteAsync('loop/*', {cwd: temporaryPath});
+
+	assert.deepEqual(removed, [path.join(loop, 'a'), path.join(loop, 'b')]);
+	notExists(['loop/a', 'loop/b']);
+});
+
+test('deletes a symlink loop - sync', symlinkTestOptions, () => {
+	const loop = createSymlinkLoop();
+
+	const removed = deleteSync('loop/*', {cwd: temporaryPath});
+
+	assert.deepEqual(removed, [path.join(loop, 'a'), path.join(loop, 'b')]);
+	notExists(['loop/a', 'loop/b']);
+});
+
+// Backslash patterns are only rewritten on Windows, where a backslash would
+// otherwise escape the next character for fast-glob. Faking the platform is the
+// only way to exercise that branch from another OS.
+async function withPlatform(platform, callback) {
+	const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+	Object.defineProperty(process, 'platform', {value: platform, configurable: true});
+
+	try {
+		return await callback();
+	} finally {
+		Object.defineProperty(process, 'platform', descriptor);
+	}
+}
+
+// Creates `temp/keep.js` and `temp/drop.js` and returns the patterns that match
+// both of them, keeping only the first one.
+function createNegationFixture() {
+	fs.mkdirSync(path.join(temporaryPath, 'temp'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'temp', 'keep.js'), '');
+	fs.writeFileSync(path.join(temporaryPath, 'temp', 'drop.js'), '');
+	return [String.raw`temp\*.js`, String.raw`!temp\keep.js`];
+}
+
+test(String.raw`negated pattern with "\" is converted on Windows - async`, async () => {
+	const patterns = createNegationFixture();
+
+	const removed = await withPlatform('win32', async () => deleteAsync(patterns, {cwd: temporaryPath}));
+
+	assert.deepEqual(removed, [path.join(temporaryPath, 'temp', 'drop.js')]);
+	notExists(['temp/drop.js']);
+	exists(['temp/keep.js']);
+});
+
+test(String.raw`negated pattern with "\" is converted on Windows - sync`, async () => {
+	const patterns = createNegationFixture();
+
+	const removed = await withPlatform('win32', async () => deleteSync(patterns, {cwd: temporaryPath}));
+
+	assert.deepEqual(removed, [path.join(temporaryPath, 'temp', 'drop.js')]);
+	notExists(['temp/drop.js']);
+	exists(['temp/keep.js']);
+});
+
+test('negated pattern is left alone off Windows - async', async () => {
+	// Off Windows a backslash escapes the next character, so `temp\*.js` looks
+	// for a literal `*` and matches nothing. Reaching fast-globby untouched is
+	// what keeps that the case.
+	const patterns = createNegationFixture();
+
+	const removed = await withPlatform('linux', async () => deleteAsync(patterns, {cwd: temporaryPath, dryRun: true}));
+
+	assert.deepEqual(removed, []);
+	exists(['temp/keep.js', 'temp/drop.js']);
+});
+
+test('negated pattern is left alone off Windows - sync', async () => {
+	const patterns = createNegationFixture();
+
+	const removed = await withPlatform('linux', async () => deleteSync(patterns, {cwd: temporaryPath, dryRun: true}));
+
+	assert.deepEqual(removed, []);
+	exists(['temp/keep.js', 'temp/drop.js']);
 });
 
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */

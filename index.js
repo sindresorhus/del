@@ -15,17 +15,40 @@ function safeCheck(file, cwd) {
 		throw new PresentableError('Cannot delete the current working directory. Can be overridden with the `force` option.');
 	}
 
-	if (!isPathInside(file, cwd)) {
+	// A symlink inside the working directory can point anywhere, so the real
+	// paths are checked as well and not just the literal ones.
+	if (!isPathInside(file, cwd) || !isRealPathInside(file, cwd)) {
 		throw new PresentableError('Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.');
+	}
+}
+
+// A path that cannot be resolved is treated as inside, as `fs.rm` would delete
+// nothing for a path that is already gone and would only remove the link itself
+// for a symlink loop.
+function isRealPathInside(file, cwd) {
+	try {
+		return isPathInside(fs.realpathSync(file), fs.realpathSync(cwd));
+	} catch {
+		return true;
 	}
 }
 
 function normalizePatterns(patterns) {
 	patterns = Array.isArray(patterns) ? patterns : [patterns];
 
-	patterns = patterns.map(pattern => process.platform === 'win32' && isGlob(pattern) === false ? slash(pattern) : pattern);
+	return patterns.map(pattern => {
+		if (process.platform !== 'win32') {
+			return pattern;
+		}
 
-	return patterns;
+		// `is-glob` reports a glob for anything starting with `!`, even when the
+		// rest is a plain path, so the negation is set aside for the test and put
+		// back afterwards.
+		const negation = pattern.startsWith('!') ? '!' : '';
+		const barePattern = negation === '' ? pattern : pattern.slice(1);
+
+		return isGlob(barePattern) ? pattern : negation + slash(barePattern);
+	});
 }
 
 export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) {
