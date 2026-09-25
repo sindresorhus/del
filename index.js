@@ -64,6 +64,16 @@ function resolveFiles(patterns, cwd) {
 	return [...files].toSorted((a, b) => b.localeCompare(a));
 }
 
+// Every path is checked up front, so that a path outside the working directory
+// is refused before anything is deleted rather than after. The paths are sorted
+// with the parents last, so checking them one at a time while deleting would
+// report the refusal only once the rest of the working directory was gone.
+function safeCheckAll(files, cwd) {
+	for (const file of files) {
+		safeCheck(file, cwd);
+	}
+}
+
 export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) {
 	options = {
 		expandDirectories: false,
@@ -77,6 +87,10 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 
 	const files = resolveFiles(await globby(patterns, options), cwd);
 
+	if (!force) {
+		safeCheckAll(files, cwd);
+	}
+
 	if (files.length === 0) {
 		onProgress({
 			totalCount: 0,
@@ -88,10 +102,6 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 	let deletedCount = 0;
 
 	const mapper = async file => {
-		if (!force) {
-			safeCheck(file, cwd);
-		}
-
 		if (!dryRun) {
 			await fsPromises.rm(file, {recursive: true, force: true});
 		}
@@ -126,6 +136,10 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), onProg
 
 	const files = resolveFiles(globbySync(patterns, options), cwd);
 
+	if (!force) {
+		safeCheckAll(files, cwd);
+	}
+
 	if (files.length === 0) {
 		onProgress({
 			totalCount: 0,
@@ -137,10 +151,6 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), onProg
 	// `deletedCount` is derived from the position in the sorted list rather than
 	// a counter, as the deletions here are strictly sequential.
 	const removedFiles = files.map((file, index) => {
-		if (!force) {
-			safeCheck(file, cwd);
-		}
-
 		if (!dryRun) {
 			fs.rmSync(file, {recursive: true, force: true});
 		}

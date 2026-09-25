@@ -48,12 +48,14 @@ beforeEach(() => {
 afterEach(() => {
 	process.chdir(processCwd);
 
-	if (!outsideTemporaryPath) {
-		return;
+	for (const directory of [outsideTemporaryPath, outsideMarkerPath]) {
+		if (directory) {
+			fs.rmSync(directory, {recursive: true, force: true});
+		}
 	}
 
-	fs.rmSync(outsideTemporaryPath, {recursive: true, force: true});
 	outsideTemporaryPath = undefined;
+	outsideMarkerPath = undefined;
 });
 
 // A directory next to `temporaryPath`, so it is reachable through a symlink but
@@ -767,6 +769,49 @@ test('cannot delete "." with the cwd option without force: true - sync', () => {
 	});
 
 	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+});
+
+// A directory next to `temporaryPath`, so that a `../` pattern names something
+// real that `del` will match and then refuse to delete. The name is unique per
+// test, as several temporary directories can exist at once.
+let outsideMarkerPath;
+
+function createOutsideMarker() {
+	outsideMarkerPath = path.join(path.dirname(temporaryPath), `${path.basename(temporaryPath)}-marker`);
+	fs.mkdirSync(outsideMarkerPath, {recursive: true});
+	return `../${path.basename(outsideMarkerPath)}`;
+}
+
+// The paths are sorted deepest first, so a path outside `cwd` is reached last
+// and everything inside it is already gone by the time the guard notices. The
+// whole batch has to be checked before anything is deleted.
+test('deletes nothing when a matched path is outside cwd - async', async () => {
+	const outsidePattern = createOutsideMarker();
+
+	await assert.rejects(deleteAsync(['*', outsidePattern], {cwd: temporaryPath}), {
+		message: cannotDeleteOutsideCwdMessage,
+	});
+
+	exists(fixtures);
+
+	// In-flight deletions keep running after the rejection.
+	await new Promise(resolve => {
+		setTimeout(resolve, 100);
+	});
+
+	exists(fixtures);
+});
+
+test('deletes nothing when a matched path is outside cwd - sync', () => {
+	const outsidePattern = createOutsideMarker();
+
+	assert.throws(() => {
+		deleteSync(['*', outsidePattern], {cwd: temporaryPath});
+	}, {
+		message: cannotDeleteOutsideCwdMessage,
+	});
+
+	exists(fixtures);
 });
 
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */
