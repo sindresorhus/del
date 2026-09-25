@@ -11,7 +11,9 @@ import slash from 'slash';
 import {PresentableError} from 'presentable-error';
 
 function safeCheck(file, cwd) {
-	if (isPathCwd(file)) {
+	// The `cwd` option can point somewhere else than the process working
+	// directory, and deleting it is the same mistake either way.
+	if (isPathCwd(file) || path.relative(cwd, file) === '') {
 		throw new PresentableError('Cannot delete the current working directory. Can be overridden with the `force` option.');
 	}
 

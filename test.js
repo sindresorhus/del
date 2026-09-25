@@ -731,4 +731,42 @@ test('onProgress counts each path once for patterns that differ only by a traili
 	}]);
 });
 
+// The `cwd` option can point somewhere else than the process working directory,
+// and deleting it is the same mistake either way, so it gets the same message.
+test('cannot delete the cwd option itself without force: true - async', async () => {
+	await assert.rejects(deleteAsync([temporaryPath], {cwd: temporaryPath}), {
+		message: cannotDeleteCwdMessage,
+	});
+
+	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+});
+
+test('cannot delete the cwd option itself without force: true - sync', () => {
+	assert.throws(() => {
+		deleteSync([temporaryPath], {cwd: temporaryPath});
+	}, {
+		message: cannotDeleteCwdMessage,
+	});
+
+	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+});
+
+test('cannot delete "." with the cwd option without force: true - async', async () => {
+	await assert.rejects(deleteAsync('.', {cwd: temporaryPath}), {
+		message: cannotDeleteCwdMessage,
+	});
+
+	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+});
+
+test('cannot delete "." with the cwd option without force: true - sync', () => {
+	assert.throws(() => {
+		deleteSync('.', {cwd: temporaryPath});
+	}, {
+		message: cannotDeleteCwdMessage,
+	});
+
+	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+});
+
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */
