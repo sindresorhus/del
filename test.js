@@ -1139,4 +1139,47 @@ test('an undefined option does not restore the globby default - sync', symlinkTe
 	}
 });
 
+// The deletions run concurrently, so a symlink that is the only route to its
+// target can be unlinked before the paths below it are removed. `concurrency: 1`
+// is the way to get the deterministic order that `deleteSync` always has.
+function createSymlinkAlias() {
+	fs.mkdirSync(path.join(temporaryPath, 'dir1/deep'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'dir1/deep/x.js'), '');
+	fs.symlinkSync(path.join(temporaryPath, 'dir1'), path.join(temporaryPath, 'link'), 'dir');
+	return path.join(temporaryPath, 'dir1');
+}
+
+// A function, as `temporaryPath` is only assigned in `beforeEach`.
+const symlinkAliasOptions = () => ({
+	cwd: temporaryPath,
+	followSymbolicLinks: true,
+	expandDirectories: true,
+});
+
+test('concurrency: 1 removes what a symlink is the only route to - async', symlinkTestOptions, async () => {
+	const target = createSymlinkAlias();
+
+	const removed = await deleteAsync('**/link', {...symlinkAliasOptions(), concurrency: 1});
+
+	assert.deepEqual(removed.map(file => path.relative(temporaryPath, file)), [
+		'link',
+		'link/deep',
+		'link/deep/x.js',
+	]);
+	assert.deepEqual(fs.readdirSync(target), []);
+});
+
+test('concurrency: 1 removes what a symlink is the only route to - sync', symlinkTestOptions, () => {
+	const target = createSymlinkAlias();
+
+	const removed = deleteSync('**/link', symlinkAliasOptions());
+
+	assert.deepEqual(removed.map(file => path.relative(temporaryPath, file)), [
+		'link',
+		'link/deep',
+		'link/deep/x.js',
+	]);
+	assert.deepEqual(fs.readdirSync(target), []);
+});
+
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */

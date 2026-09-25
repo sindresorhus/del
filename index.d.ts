@@ -2,7 +2,7 @@ import {type GlobbyOptions} from 'globby';
 
 export type ProgressData = {
 	/**
-	Deleted files and directories count.
+	Deleted files and directories count, or the count of what the `dryRun` option would have deleted.
 	*/
 	readonly deletedCount: number;
 
@@ -17,9 +17,9 @@ export type ProgressData = {
 	readonly percent: number;
 
 	/**
-	The absolute path of the deleted file or directory.
+	The absolute path of the deleted file or directory, or the one the `dryRun` option would have deleted.
 
- 	It will not be present if nothing was deleted.
+	It will not be present if nothing was deleted.
 	*/
 	readonly path?: string;
 };
@@ -50,6 +50,8 @@ export type Options = {
 
 	/**
 	Concurrency limit. `deleteAsync` applies it to the deletions, where `deleteSync` deletes one path at a time. Both pass it on to globby, where it limits how many directories are read at once. Minimum: `1`.
+
+	The paths are ordered so that a directory is removed after the paths inside it, but that order only holds as far as `concurrency` reaches, so a symlink that is the only route to its target can leave files behind. Use `1` if that matters.
 
 	@default Infinity
 	*/

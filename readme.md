@@ -159,6 +159,8 @@ Minimum: `1`
 
 Concurrency limit. `deleteAsync` applies it to the deletions, where `deleteSync` deletes one path at a time. Both pass it on to [globby](https://github.com/sindresorhus/globby#options), where it limits how many directories are read at once, so a low value also slows down finding the files.
 
+The paths are ordered so that a directory is always removed after the paths inside it, but that order only holds as far as `concurrency` reaches. A symlink that is the only route to its target can be unlinked before the paths below it are removed, which leaves them on disk while still reporting them as deleted. It leaves files behind rather than removing too much, and `concurrency: 1` avoids it.
+
 ##### cwd
 
 Type: `string`\
@@ -201,6 +203,7 @@ await deleteAsync(patterns, {
 
 - `percent` is a value between `0` and `1`
 - `path` is the absolute path of the deleted file or directory. It will not be present if nothing was deleted.
+- with the `dryRun` option, `deletedCount` and `path` describe what would have been deleted, since nothing is
 
 ## CLI
 
