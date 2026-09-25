@@ -1003,4 +1003,77 @@ test('a trailing ** leaves the directory itself behind - sync', () => {
 	notExists(['assets/css']);
 });
 
+// A symlink is unlinked, never followed, so it can be deleted even though it
+// points outside. This is the shape a `node_modules` full of links has.
+test('deletes a symlink that points outside cwd - async', async () => {
+	const target = createOutsideDirectory('package');
+	fs.writeFileSync(path.join(target, 'index.js'), '');
+	fs.symlinkSync(target, path.join(temporaryPath, 'linked'), 'dir');
+
+	const removed = await deleteAsync('linked', {cwd: temporaryPath});
+
+	assert.deepEqual(removed, [path.join(temporaryPath, 'linked')]);
+	notExists(['linked']);
+	// Only the link is gone, never what it pointed at.
+	assert.ok(fs.existsSync(path.join(target, 'index.js')));
+});
+
+test('deletes a symlink that points outside cwd - sync', () => {
+	const target = createOutsideDirectory('package');
+	fs.writeFileSync(path.join(target, 'index.js'), '');
+	fs.symlinkSync(target, path.join(temporaryPath, 'linked'), 'dir');
+
+	const removed = deleteSync('linked', {cwd: temporaryPath});
+
+	assert.deepEqual(removed, [path.join(temporaryPath, 'linked')]);
+	notExists(['linked']);
+	assert.ok(fs.existsSync(path.join(target, 'index.js')));
+});
+
+test('deletes a project whose node_modules are symlinks - async', async () => {
+	const store = createOutsideDirectory('store');
+	fs.mkdirSync(path.join(store, 'lodash'), {recursive: true});
+	fs.writeFileSync(path.join(store, 'lodash', 'index.js'), '');
+
+	fs.mkdirSync(path.join(temporaryPath, 'node_modules'), {recursive: true});
+	fs.symlinkSync(path.join(store, 'lodash'), path.join(temporaryPath, 'node_modules', 'lodash'), 'dir');
+	fs.writeFileSync(path.join(temporaryPath, 'app.js'), '');
+
+	const removed = await deleteAsync('**/*', {cwd: temporaryPath, dot: true, dryRun: true});
+
+	assert.deepEqual(removed.map(file => path.relative(temporaryPath, file)), [
+		'.dot.tmp',
+		'1.tmp',
+		'2.tmp',
+		'3.tmp',
+		'4.tmp',
+		'app.js',
+		'node_modules',
+		'node_modules/lodash',
+	]);
+});
+
+test('deletes a project whose node_modules are symlinks - sync', () => {
+	const store = createOutsideDirectory('store');
+	fs.mkdirSync(path.join(store, 'lodash'), {recursive: true});
+	fs.writeFileSync(path.join(store, 'lodash', 'index.js'), '');
+
+	fs.mkdirSync(path.join(temporaryPath, 'node_modules'), {recursive: true});
+	fs.symlinkSync(path.join(store, 'lodash'), path.join(temporaryPath, 'node_modules', 'lodash'), 'dir');
+	fs.writeFileSync(path.join(temporaryPath, 'app.js'), '');
+
+	const removed = deleteSync('**/*', {cwd: temporaryPath, dot: true, dryRun: true});
+
+	assert.deepEqual(removed.map(file => path.relative(temporaryPath, file)), [
+		'.dot.tmp',
+		'1.tmp',
+		'2.tmp',
+		'3.tmp',
+		'4.tmp',
+		'app.js',
+		'node_modules',
+		'node_modules/lodash',
+	]);
+});
+
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */

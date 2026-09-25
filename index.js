@@ -27,9 +27,13 @@ function safeCheck(file, cwd) {
 // A path that cannot be resolved is treated as inside, as `fs.rm` would delete
 // nothing for a path that is already gone and would only remove the link itself
 // for a symlink loop.
+//
+// A symlink is unlinked rather than followed, so where it points does not
+// matter, only where it lives. Anything reached *through* a link is a real
+// path, which is the case that has to be caught.
 function isRealPathInside(file, cwd) {
 	try {
-		return isPathInside(fs.realpathSync(file), fs.realpathSync(cwd));
+		return fs.lstatSync(file).isSymbolicLink() || isPathInside(fs.realpathSync(file), fs.realpathSync(cwd));
 	} catch {
 		return true;
 	}
