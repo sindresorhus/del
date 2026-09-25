@@ -46,6 +46,14 @@ To delete all subdirectories inside `public/`, you can do:
 deleteSync(['public/*/']);
 ```
 
+A pattern made up of nothing but negations matches everything, so this deletes the whole tree except `keep.js`:
+
+```js
+deleteSync(['!keep.js']);
+```
+
+Pass `expandNegationOnlyPatterns: false` to have such a pattern match nothing instead.
+
 Suggestions on how to improve this welcome!
 
 ## API
@@ -73,7 +81,7 @@ See the supported [glob patterns](https://github.com/sindresorhus/globby#globbin
 
 Type: `object`
 
-You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the below options. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
+You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the below options, except `objectMode` and `stats`, which return entries instead of paths. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
 
 ##### force
 
@@ -125,13 +133,45 @@ deleteSync('*', {dot: true});
 //=> ['/…/.editorconfig', '/…/package.json']
 ```
 
+The two calls are independent, as the first one deletes `package.json` before the second one runs.
+
+##### gitignore
+
+Type: `boolean`\
+Default: `false`
+
+Respect the ignore patterns in `.gitignore` files. This option is passed through to [globby](https://github.com/sindresorhus/globby#options).
+
+Note that it does not protect `.git` itself, only the files that `.gitignore` rules out. A broad pattern with `dot: true` will still match the repository metadata:
+
+```js
+deleteSync('**/*', {gitignore: true, dot: true});
+//=> '.git', '.git/objects', … are deleted
+```
+
+Add `'**/.git'` to `ignore` if that is not what you want.
+
 ##### concurrency
 
 Type: `number`\
 Default: `Infinity`\
 Minimum: `1`
 
-Concurrency limit.
+Concurrency limit. `deleteAsync` applies it to the deletions, where `deleteSync` deletes one path at a time. Both pass it on to [globby](https://github.com/sindresorhus/globby#options), where it limits how many directories are read at once, so a low value also slows down finding the files.
+
+##### cwd
+
+Type: `string`\
+Default: `process.cwd()`
+
+The directory the patterns are relative to, and the boundary that `del` refuses to delete outside of without `force`.
+
+```js
+import {deleteSync} from 'del';
+
+// Deletes `dist` and everything in it, without touching anything above it.
+deleteSync('dist', {cwd: '/var/www/app'});
+```
 
 ##### onProgress
 

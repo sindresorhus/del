@@ -1,4 +1,4 @@
-import {type Options as GlobbyOptions} from 'globby';
+import {type GlobbyOptions} from 'globby';
 
 export type ProgressData = {
 	/**
@@ -49,11 +49,26 @@ export type Options = {
 	readonly dryRun?: boolean;
 
 	/**
-	Concurrency limit. Minimum: `1`.
+	Concurrency limit. `deleteAsync` applies it to the deletions, where `deleteSync` deletes one path at a time. Both pass it on to globby, where it limits how many directories are read at once. Minimum: `1`.
 
 	@default Infinity
 	*/
 	readonly concurrency?: number;
+
+	/**
+	The directory the patterns are relative to, and the boundary that `del` refuses to delete outside of without `force`.
+
+	@default process.cwd()
+
+	@example
+	```
+	import {deleteSync} from 'del';
+
+	// Deletes `dist` and everything in it, without touching anything above it.
+	deleteSync('dist', {cwd: '/var/www/app'});
+	```
+	*/
+	readonly cwd?: string;
 
 	/**
 	Called after each file or directory is deleted.
@@ -69,7 +84,7 @@ export type Options = {
 	```
 	*/
 	readonly onProgress?: (progress: ProgressData) => void;
-} & GlobbyOptions;
+} & Omit<GlobbyOptions, 'cwd' | 'objectMode' | 'stats'>;
 
 /**
 Delete files and directories using glob patterns.
@@ -79,7 +94,7 @@ Note that glob patterns can only contain forward-slashes, not backward-slashes. 
 @param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 - [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/main/test/test.js)
 - [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
-@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
+@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options, except `objectMode` and `stats`, which return entries instead of paths. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
 @returns The deleted paths.
 
 @example
@@ -104,7 +119,7 @@ Note that glob patterns can only contain forward-slashes, not backward-slashes. 
 @param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 - [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/main/test/test.js)
 - [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
-@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
+@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options, except `objectMode` and `stats`, which return entries instead of paths. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
 @returns The deleted paths.
 */
 export function deleteSync(
