@@ -5,11 +5,7 @@
 	"license": "MIT",
 	"repository": "sindresorhus/del",
 	"funding": "https://github.com/sponsors/sindresorhus",
-	"author": {
-		"name": "Sindre Sorhus",
-		"email": "sindresorhus@gmail.com",
-		"url": "https://sindresorhus.com"
-	},
+	"author": "Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)",
 	"type": "module",
 	"exports": {
 		"types": "./index.d.ts",
@@ -17,10 +13,10 @@
 	},
 	"sideEffects": false,
 	"engines": {
-		"node": ">=18"
+		"node": ">=22"
 	},
 	"scripts": {
-		"test": "xo && ava && tsd",
+		"test": "xo && node --test && tsd",
 		"bench": "node benchmark.js"
 	},
 	"files": [
@@ -52,23 +48,17 @@
 		"filesystem"
 	],
 	"dependencies": {
-		"globby": "^14.0.2",
+		"globby": "^16.2.4",
 		"is-glob": "^4.0.3",
-		"is-path-cwd": "^3.0.0",
+		"is-path-cwd": "^4.0.1",
 		"is-path-inside": "^4.0.0",
-		"p-map": "^7.0.2",
+		"p-map": "^7.0.8",
 		"presentable-error": "^0.0.1",
 		"slash": "^5.1.0"
 	},
 	"devDependencies": {
-		"ava": "^6.1.3",
 		"benchmark": "^2.1.4",
-		"tempy": "^3.1.0",
-		"tsd": "^0.31.2",
-		"xo": "^0.59.3"
-	},
-	"ava": {
-		"serial": true,
-		"workerThreads": false
+		"tsd": "^0.33.0",
+		"xo": "^5.0.1"
 	}
 }

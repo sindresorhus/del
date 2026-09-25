@@ -93,7 +93,7 @@ console.log('Deleted files and directories:\n', deletedPaths.join('\n'));
 */
 export function deleteAsync(
 	patterns: string | readonly string[],
-	options?: Options
+	options?: Options,
 ): Promise<string[]>;
 
 /**
@@ -109,5 +109,5 @@ Note that glob patterns can only contain forward-slashes, not backward-slashes. 
 */
 export function deleteSync(
 	patterns: string | readonly string[],
-	options?: Options
+	options?: Options,
 ): string[];

@@ -1,25 +1,27 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import assert from 'node:assert/strict';
+import {afterEach, beforeEach, test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import test from 'ava';
-import {temporaryDirectory} from 'tempy';
 import {deleteAsync, deleteSync} from './index.js';
+
+/*
+The disabled rules below are false positives for this file:
+- `node-test/require-assertion` and `node-test/no-conditional-assertion`: the
+  assertions live in the `exists`/`notExists` helpers and in a loop that runs a
+  fixed number of times, so the linter cannot see them at the call site.
+- `node-test/no-process-chdir-in-test`: `del` refuses to delete the current
+  working directory, so that guard can only be tested by changing it.
+*/
+/* eslint-disable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- False positives here: assertions live in the `exists`/`notExists` helpers and in a fixed-count loop, and the working-directory guard can only be tested by changing the working directory. */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const processCwd = process.cwd();
 
-function exists(t, files) {
-	for (const file of files) {
-		t.true(fs.existsSync(path.join(t.context.tmp, file)));
-	}
-}
-
-function notExists(t, files) {
-	for (const file of files) {
-		t.false(fs.existsSync(path.join(t.context.tmp, file)));
-	}
-}
+const cannotDeleteCwdMessage = 'Cannot delete the current working directory. Can be overridden with the `force` option.';
+const cannotDeleteOutsideCwdMessage = 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.';
 
 const fixtures = [
 	'1.tmp',
@@ -29,97 +31,119 @@ const fixtures = [
 	'.dot.tmp',
 ];
 
-test.beforeEach(t => {
-	t.context.tmp = temporaryDirectory();
+// Every test works inside a fresh temporary directory, so no glob can ever reach
+// the real filesystem, and the fixtures below are its only contents.
+let temporaryPath;
+
+beforeEach(() => {
+	const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'del-'));
+	temporaryPath = fs.realpathSync(temporaryRoot);
 
 	for (const fixture of fixtures) {
-		fs.mkdirSync(path.join(t.context.tmp, fixture), {recursive: true});
+		fs.mkdirSync(path.join(temporaryPath, fixture), {recursive: true});
 	}
 });
 
-test('delete files - async', async t => {
-	await deleteAsync(['*.tmp', '!1*'], {cwd: t.context.tmp});
-
-	exists(t, ['1.tmp', '.dot.tmp']);
-	notExists(t, ['2.tmp', '3.tmp', '4.tmp']);
+// Tests that guard against deleting the working directory move into it.
+afterEach(() => {
+	process.chdir(processCwd);
 });
 
-test('delete files - sync', t => {
-	deleteSync(['*.tmp', '!1*'], {cwd: t.context.tmp});
+function exists(files) {
+	for (const file of files) {
+		assert.ok(fs.existsSync(path.join(temporaryPath, file)));
+	}
+}
 
-	exists(t, ['1.tmp', '.dot.tmp']);
-	notExists(t, ['2.tmp', '3.tmp', '4.tmp']);
+function notExists(files) {
+	for (const file of files) {
+		assert.ok(!fs.existsSync(path.join(temporaryPath, file)));
+	}
+}
+
+test('delete files - async', async () => {
+	await deleteAsync(['*.tmp', '!1*'], {cwd: temporaryPath});
+
+	exists(['1.tmp', '.dot.tmp']);
+	notExists(['2.tmp', '3.tmp', '4.tmp']);
 });
 
-test('take options into account - async', async t => {
+test('delete files - sync', () => {
+	deleteSync(['*.tmp', '!1*'], {cwd: temporaryPath});
+
+	exists(['1.tmp', '.dot.tmp']);
+	notExists(['2.tmp', '3.tmp', '4.tmp']);
+});
+
+test('take options into account - async', async () => {
 	await deleteAsync(['*.tmp', '!1*'], {
-		cwd: t.context.tmp,
+		cwd: temporaryPath,
 		dot: true,
 	});
 
-	exists(t, ['1.tmp']);
-	notExists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	exists(['1.tmp']);
+	notExists(['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('take options into account - sync', t => {
+test('take options into account - sync', () => {
 	deleteSync(['*.tmp', '!1*'], {
-		cwd: t.context.tmp,
+		cwd: temporaryPath,
 		dot: true,
 	});
 
-	exists(t, ['1.tmp']);
-	notExists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	exists(['1.tmp']);
+	notExists(['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('return deleted files - async', async t => {
-	t.deepEqual(
-		await deleteAsync('1.tmp', {cwd: t.context.tmp}),
-		[path.join(t.context.tmp, '1.tmp')],
+test('return deleted files - async', async () => {
+	assert.deepEqual(
+		await deleteAsync('1.tmp', {cwd: temporaryPath}),
+		[path.join(temporaryPath, '1.tmp')],
 	);
 });
 
-test('return deleted files - sync', t => {
-	t.deepEqual(
-		deleteSync('1.tmp', {cwd: t.context.tmp}),
-		[path.join(t.context.tmp, '1.tmp')],
+test('return deleted files - sync', () => {
+	assert.deepEqual(
+		deleteSync('1.tmp', {cwd: temporaryPath}),
+		[path.join(temporaryPath, '1.tmp')],
 	);
 });
 
-test('don\'t delete files, but return them - async', async t => {
+test('don\'t delete files, but return them - async', async () => {
 	const deletedFiles = await deleteAsync(['*.tmp', '!1*'], {
-		cwd: t.context.tmp,
+		cwd: temporaryPath,
 		dryRun: true,
 	});
-	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	t.deepEqual(deletedFiles, [
-		path.join(t.context.tmp, '2.tmp'),
-		path.join(t.context.tmp, '3.tmp'),
-		path.join(t.context.tmp, '4.tmp'),
+	exists(['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	assert.deepEqual(deletedFiles, [
+		path.join(temporaryPath, '2.tmp'),
+		path.join(temporaryPath, '3.tmp'),
+		path.join(temporaryPath, '4.tmp'),
 	]);
 });
 
-test('don\'t delete files, but return them - sync', t => {
+test('don\'t delete files, but return them - sync', () => {
 	const deletedFiles = deleteSync(['*.tmp', '!1*'], {
-		cwd: t.context.tmp,
+		cwd: temporaryPath,
 		dryRun: true,
 	});
-	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	t.deepEqual(deletedFiles, [
-		path.join(t.context.tmp, '2.tmp'),
-		path.join(t.context.tmp, '3.tmp'),
-		path.join(t.context.tmp, '4.tmp'),
+	exists(['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	assert.deepEqual(deletedFiles, [
+		path.join(temporaryPath, '2.tmp'),
+		path.join(temporaryPath, '3.tmp'),
+		path.join(temporaryPath, '4.tmp'),
 	]);
 });
 
 // Currently this is only testable locally on macOS.
 // https://github.com/sindresorhus/del/issues/68
-test('does not throw EINVAL - async', async t => {
+test('does not throw EINVAL - async', async () => {
 	await deleteAsync('**/*', {
-		cwd: t.context.tmp,
+		cwd: temporaryPath,
 		dot: true,
 	});
 
-	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
+	const nestedFile = path.resolve(temporaryPath, 'a/b/c/nested.js');
 	const totalAttempts = 200;
 
 	let count = 0;
@@ -128,33 +152,33 @@ test('does not throw EINVAL - async', async t => {
 
 		// eslint-disable-next-line no-await-in-loop
 		const removed = await deleteAsync('**/*', {
-			cwd: t.context.tmp,
+			cwd: temporaryPath,
 			dot: true,
 		});
 
 		const expected = [
-			path.resolve(t.context.tmp, 'a'),
-			path.resolve(t.context.tmp, 'a/b'),
-			path.resolve(t.context.tmp, 'a/b/c'),
-			path.resolve(t.context.tmp, 'a/b/c/nested.js'),
+			path.resolve(temporaryPath, 'a'),
+			path.resolve(temporaryPath, 'a/b'),
+			path.resolve(temporaryPath, 'a/b/c'),
+			path.resolve(temporaryPath, 'a/b/c/nested.js'),
 		];
 
-		t.deepEqual(removed, expected);
+		assert.deepEqual(removed, expected);
 
 		count += 1;
 	}
 
-	notExists(t, [...fixtures, 'a']);
-	t.is(count, totalAttempts);
+	notExists([...fixtures, 'a']);
+	assert.equal(count, totalAttempts);
 });
 
-test('does not throw EINVAL - sync', t => {
+test('does not throw EINVAL - sync', () => {
 	deleteSync('**/*', {
-		cwd: t.context.tmp,
+		cwd: temporaryPath,
 		dot: true,
 	});
 
-	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
+	const nestedFile = path.resolve(temporaryPath, 'a/b/c/nested.js');
 	const totalAttempts = 200;
 
 	let count = 0;
@@ -162,233 +186,220 @@ test('does not throw EINVAL - sync', t => {
 		fs.mkdirSync(nestedFile, {recursive: true});
 
 		const removed = deleteSync('**/*', {
-			cwd: t.context.tmp,
+			cwd: temporaryPath,
 			dot: true,
 		});
 
 		const expected = [
-			path.resolve(t.context.tmp, 'a'),
-			path.resolve(t.context.tmp, 'a/b'),
-			path.resolve(t.context.tmp, 'a/b/c'),
-			path.resolve(t.context.tmp, 'a/b/c/nested.js'),
+			path.resolve(temporaryPath, 'a'),
+			path.resolve(temporaryPath, 'a/b'),
+			path.resolve(temporaryPath, 'a/b/c'),
+			path.resolve(temporaryPath, 'a/b/c/nested.js'),
 		];
 
-		t.deepEqual(removed, expected);
+		assert.deepEqual(removed, expected);
 
 		count += 1;
 	}
 
-	notExists(t, [...fixtures, 'a']);
-	t.is(count, totalAttempts);
+	notExists([...fixtures, 'a']);
+	assert.equal(count, totalAttempts);
 });
 
-test('delete relative files outside of process.cwd using cwd - async', async t => {
-	await deleteAsync(['1.tmp'], {cwd: t.context.tmp});
+test('delete relative files outside of process.cwd using cwd - async', async () => {
+	await deleteAsync(['1.tmp'], {cwd: temporaryPath});
 
-	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	notExists(t, ['1.tmp']);
+	exists(['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(['1.tmp']);
 });
 
-test('delete relative files outside of process.cwd using cwd - sync', t => {
-	deleteSync(['1.tmp'], {cwd: t.context.tmp});
+test('delete relative files outside of process.cwd using cwd - sync', () => {
+	deleteSync(['1.tmp'], {cwd: temporaryPath});
 
-	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	notExists(t, ['1.tmp']);
+	exists(['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(['1.tmp']);
 });
 
-test('delete absolute files outside of process.cwd using cwd - async', async t => {
-	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
-	await deleteAsync([absolutePath], {cwd: t.context.tmp});
+test('delete absolute files outside of process.cwd using cwd - async', async () => {
+	const absolutePath = path.resolve(temporaryPath, '1.tmp');
+	await deleteAsync([absolutePath], {cwd: temporaryPath});
 
-	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	notExists(t, ['1.tmp']);
+	exists(['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(['1.tmp']);
 });
 
-test('delete absolute files outside of process.cwd using cwd - sync', t => {
-	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
-	deleteSync([absolutePath], {cwd: t.context.tmp});
+test('delete absolute files outside of process.cwd using cwd - sync', () => {
+	const absolutePath = path.resolve(temporaryPath, '1.tmp');
+	deleteSync([absolutePath], {cwd: temporaryPath});
 
-	exists(t, ['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	notExists(t, ['1.tmp']);
+	exists(['2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	notExists(['1.tmp']);
 });
 
-test('cannot delete actual working directory without force: true - async', async t => {
-	process.chdir(t.context.tmp);
+test('cannot delete actual working directory without force: true - async', async () => {
+	process.chdir(temporaryPath);
 
-	await t.throwsAsync(deleteAsync([t.context.tmp]), {
-		instanceOf: Error,
-		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.',
+	await assert.rejects(deleteAsync([temporaryPath]), {
+		message: cannotDeleteCwdMessage,
 	});
 
-	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	process.chdir(processCwd);
+	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('cannot delete actual working directory without force: true - sync', t => {
-	process.chdir(t.context.tmp);
+test('cannot delete actual working directory without force: true - sync', () => {
+	process.chdir(temporaryPath);
 
-	t.throws(() => {
-		deleteSync([t.context.tmp]);
+	assert.throws(() => {
+		deleteSync([temporaryPath]);
 	}, {
-		instanceOf: Error,
-		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.',
+		message: cannotDeleteCwdMessage,
 	});
 
-	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	process.chdir(processCwd);
+	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('cannot delete actual working directory with cwd option without force: true - async', async t => {
-	process.chdir(t.context.tmp);
+test('cannot delete actual working directory with cwd option without force: true - async', async () => {
+	process.chdir(temporaryPath);
 
-	await t.throwsAsync(deleteAsync([t.context.tmp], {cwd: __dirname}), {
-		instanceOf: Error,
-		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.',
+	await assert.rejects(deleteAsync([temporaryPath], {cwd: __dirname}), {
+		message: cannotDeleteCwdMessage,
 	});
 
-	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	process.chdir(processCwd);
+	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('cannot delete actual working directory with cwd option without force: true - sync', t => {
-	process.chdir(t.context.tmp);
+test('cannot delete actual working directory with cwd option without force: true - sync', () => {
+	process.chdir(temporaryPath);
 
-	t.throws(() => {
-		deleteSync([t.context.tmp], {cwd: __dirname});
+	assert.throws(() => {
+		deleteSync([temporaryPath], {cwd: __dirname});
 	}, {
-		instanceOf: Error,
-		message: 'Cannot delete the current working directory. Can be overridden with the `force` option.',
+		message: cannotDeleteCwdMessage,
 	});
 
-	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	process.chdir(processCwd);
+	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('cannot delete files outside cwd without force: true - async', async t => {
-	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+test('cannot delete files outside cwd without force: true - async', async () => {
+	const absolutePath = path.resolve(temporaryPath, '1.tmp');
 
-	await t.throwsAsync(deleteAsync([absolutePath]), {
-		instanceOf: Error,
-		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.',
+	await assert.rejects(deleteAsync([absolutePath]), {
+		message: cannotDeleteOutsideCwdMessage,
 	});
 
-	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	exists(['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('cannot delete files outside cwd without force: true - sync', t => {
-	const absolutePath = path.resolve(t.context.tmp, '1.tmp');
+test('cannot delete files outside cwd without force: true - sync', () => {
+	const absolutePath = path.resolve(temporaryPath, '1.tmp');
 
-	t.throws(() => {
+	assert.throws(() => {
 		deleteSync([absolutePath]);
 	}, {
-		instanceOf: Error,
-		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.',
+		message: cannotDeleteOutsideCwdMessage,
 	});
 
-	exists(t, ['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
+	exists(['', '1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('cannot delete files inside process.cwd when outside cwd without force: true - async', async t => {
-	process.chdir(t.context.tmp);
-	const removeFile = path.resolve(t.context.tmp, '2.tmp');
-	const cwd = path.resolve(t.context.tmp, '1.tmp');
+test('cannot delete files inside process.cwd when outside cwd without force: true - async', async () => {
+	process.chdir(temporaryPath);
+	const removeFile = path.resolve(temporaryPath, '2.tmp');
+	const cwd = path.resolve(temporaryPath, '1.tmp');
 
-	await t.throwsAsync(deleteAsync([removeFile], {cwd}), {
-		instanceOf: Error,
-		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.',
+	await assert.rejects(deleteAsync([removeFile], {cwd}), {
+		message: cannotDeleteOutsideCwdMessage,
 	});
 
-	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	process.chdir(processCwd);
+	exists(['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('cannot delete files inside process.cwd when outside cwd without force: true - sync', t => {
-	process.chdir(t.context.tmp);
-	const removeFile = path.resolve(t.context.tmp, '2.tmp');
-	const cwd = path.resolve(t.context.tmp, '1.tmp');
+test('cannot delete files inside process.cwd when outside cwd without force: true - sync', () => {
+	process.chdir(temporaryPath);
+	const removeFile = path.resolve(temporaryPath, '2.tmp');
+	const cwd = path.resolve(temporaryPath, '1.tmp');
 
-	t.throws(() => {
+	assert.throws(() => {
 		deleteSync([removeFile], {cwd});
 	}, {
-		instanceOf: Error,
-		message: 'Cannot delete files/directories outside the current working directory. Can be overridden with the `force` option.',
+		message: cannotDeleteOutsideCwdMessage,
 	});
 
-	exists(t, ['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
-	process.chdir(processCwd);
+	exists(['1.tmp', '2.tmp', '3.tmp', '4.tmp', '.dot.tmp']);
 });
 
-test('windows can pass absolute paths with "\\" - async', async t => {
-	const filePath = path.resolve(t.context.tmp, '1.tmp');
+test(String.raw`windows can pass absolute paths with "\" - async`, async () => {
+	const filePath = path.resolve(temporaryPath, '1.tmp');
 
-	const removeFiles = await deleteAsync([filePath], {cwd: t.context.tmp, dryRun: true});
+	const removeFiles = await deleteAsync([filePath], {cwd: temporaryPath, dryRun: true});
 
-	t.deepEqual(removeFiles, [filePath]);
+	assert.deepEqual(removeFiles, [filePath]);
 });
 
-test('windows can pass absolute paths with "\\" - sync', t => {
-	const filePath = path.resolve(t.context.tmp, '1.tmp');
+test(String.raw`windows can pass absolute paths with "\" - sync`, () => {
+	const filePath = path.resolve(temporaryPath, '1.tmp');
 
-	const removeFiles = deleteSync([filePath], {cwd: t.context.tmp, dryRun: true});
+	const removeFiles = deleteSync([filePath], {cwd: temporaryPath, dryRun: true});
 
-	t.deepEqual(removeFiles, [filePath]);
+	assert.deepEqual(removeFiles, [filePath]);
 });
 
-test('windows can pass relative paths with "\\" - async', async t => {
-	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
+test(String.raw`windows can pass relative paths with "\" - async`, async () => {
+	const nestedFile = path.resolve(temporaryPath, 'a/b/c/nested.js');
 	fs.mkdirSync(nestedFile, {recursive: true});
 
-	const removeFiles = await deleteAsync([nestedFile], {cwd: t.context.tmp, dryRun: true});
+	const removeFiles = await deleteAsync([nestedFile], {cwd: temporaryPath, dryRun: true});
 
-	t.deepEqual(removeFiles, [nestedFile]);
+	assert.deepEqual(removeFiles, [nestedFile]);
 });
 
-test('windows can pass relative paths with "\\" - sync', t => {
-	const nestedFile = path.resolve(t.context.tmp, 'a/b/c/nested.js');
+test(String.raw`windows can pass relative paths with "\" - sync`, () => {
+	const nestedFile = path.resolve(temporaryPath, 'a/b/c/nested.js');
 	fs.mkdirSync(nestedFile, {recursive: true});
 
-	const removeFiles = deleteSync([nestedFile], {cwd: t.context.tmp, dryRun: true});
+	const removeFiles = deleteSync([nestedFile], {cwd: temporaryPath, dryRun: true});
 
-	t.deepEqual(removeFiles, [nestedFile]);
+	assert.deepEqual(removeFiles, [nestedFile]);
 });
 
-test('onProgress option - progress of non-existent file', async t => {
+test('onProgress option - progress of non-existent file', async () => {
 	let report;
 
 	await deleteAsync('non-existent-directory', {
+		cwd: temporaryPath,
 		onProgress(event) {
 			report = event;
 		},
 	});
 
-	t.deepEqual(report, {
+	assert.deepEqual(report, {
 		totalCount: 0,
 		deletedCount: 0,
 		percent: 1,
 	});
 });
 
-test('onProgress option - progress of single file', async t => {
+test('onProgress option - progress of single file', async () => {
 	let report;
 
-	await deleteAsync(t.context.tmp, {
+	await deleteAsync(temporaryPath, {
 		cwd: __dirname, force: true, onProgress(event) {
 			report = event;
 		},
 	});
 
-	t.deepEqual(report, {
+	assert.deepEqual(report, {
 		totalCount: 1,
 		deletedCount: 1,
 		percent: 1,
-		path: t.context.tmp,
+		path: temporaryPath,
 	});
 });
 
-test('onProgress option - progress of multiple files', async t => {
+test('onProgress option - progress of multiple files', async () => {
 	const reports = [];
 
-	const sourcePath = process.platform === 'win32' ? path.resolve(`${t.context.tmp}/*`).replaceAll('\\', '/') : `${t.context.tmp}/*`;
+	const sourcePath = process.platform === 'win32' ? path.resolve(`${temporaryPath}/*`).replaceAll('\\', '/') : `${temporaryPath}/*`;
 
 	await deleteAsync(sourcePath, {
 		cwd: __dirname,
@@ -398,10 +409,12 @@ test('onProgress option - progress of multiple files', async t => {
 		},
 	});
 
-	t.is(reports.length, 4);
-	t.deepEqual(reports.map(r => r.totalCount), [4, 4, 4, 4]);
-	t.deepEqual(reports.map(r => r.deletedCount).sort(), [1, 2, 3, 4]);
+	assert.equal(reports.length, 4);
+	assert.deepEqual(reports.map(r => r.totalCount), [4, 4, 4, 4]);
+	assert.deepEqual(reports.map(r => r.deletedCount).toSorted((a, b) => a - b), [1, 2, 3, 4]);
 
-	const expectedPaths = ['1', '2', '3', '4'].map(x => path.join(t.context.tmp, `${x}.tmp`));
-	t.deepEqual(reports.map(r => r.path).sort(), expectedPaths.sort());
+	const expectedPaths = ['1', '2', '3', '4'].map(x => path.join(temporaryPath, `${x}.tmp`));
+	assert.deepEqual(reports.map(r => r.path).toSorted((a, b) => a.localeCompare(b)), expectedPaths.toSorted((a, b) => a.localeCompare(b)));
 });
+
+/* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */

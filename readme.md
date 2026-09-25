@@ -109,7 +109,7 @@ Note that an explicit dot in a portion of the pattern will always match dot file
 
 **Example**
 
-```
+```text
 directory/
 ├── .editorconfig
 └── package.json

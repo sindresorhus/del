@@ -23,13 +23,7 @@ function safeCheck(file, cwd) {
 function normalizePatterns(patterns) {
 	patterns = Array.isArray(patterns) ? patterns : [patterns];
 
-	patterns = patterns.map(pattern => {
-		if (process.platform === 'win32' && isGlob(pattern) === false) {
-			return slash(pattern);
-		}
-
-		return pattern;
-	});
+	patterns = patterns.map(pattern => process.platform === 'win32' && isGlob(pattern) === false ? slash(pattern) : pattern);
 
 	return patterns;
 }
@@ -46,7 +40,7 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 	patterns = normalizePatterns(patterns);
 
 	const paths = await globby(patterns, options);
-	const files = paths.sort((a, b) => b.localeCompare(a));
+	const files = paths.toSorted((a, b) => b.localeCompare(a));
 
 	if (files.length === 0) {
 		onProgress({
@@ -83,9 +77,7 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 
 	const removedFiles = await pMap(files, mapper, options);
 
-	removedFiles.sort((a, b) => a.localeCompare(b));
-
-	return removedFiles;
+	return removedFiles.toSorted((a, b) => a.localeCompare(b));
 }
 
 export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) {
@@ -100,7 +92,7 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), ...opt
 	patterns = normalizePatterns(patterns);
 
 	const files = globbySync(patterns, options)
-		.sort((a, b) => b.localeCompare(a));
+		.toSorted((a, b) => b.localeCompare(a));
 
 	const removedFiles = files.map(file => {
 		file = path.resolve(cwd, file);
@@ -116,7 +108,5 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), ...opt
 		return file;
 	});
 
-	removedFiles.sort((a, b) => a.localeCompare(b));
-
-	return removedFiles;
+	return removedFiles.toSorted((a, b) => a.localeCompare(b));
 }
