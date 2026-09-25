@@ -417,4 +417,60 @@ test('onProgress option - progress of multiple files', async () => {
 	assert.deepEqual(reports.map(r => r.path).toSorted((a, b) => a.localeCompare(b)), expectedPaths.toSorted((a, b) => a.localeCompare(b)));
 });
 
+test('onProgress option - progress of non-existent file - sync', () => {
+	let report;
+
+	deleteSync('non-existent-directory', {
+		cwd: temporaryPath,
+		onProgress(event) {
+			report = event;
+		},
+	});
+
+	assert.deepEqual(report, {
+		totalCount: 0,
+		deletedCount: 0,
+		percent: 1,
+	});
+});
+
+test('onProgress option - progress of single file - sync', () => {
+	let report;
+
+	deleteSync(temporaryPath, {
+		cwd: __dirname, force: true, onProgress(event) {
+			report = event;
+		},
+	});
+
+	assert.deepEqual(report, {
+		totalCount: 1,
+		deletedCount: 1,
+		percent: 1,
+		path: temporaryPath,
+	});
+});
+
+test('onProgress option - progress of multiple files - sync', () => {
+	const reports = [];
+
+	const sourcePath = process.platform === 'win32' ? path.resolve(`${temporaryPath}/*`).replaceAll('\\', '/') : `${temporaryPath}/*`;
+
+	deleteSync(sourcePath, {
+		cwd: __dirname,
+		force: true,
+		onProgress(event) {
+			reports.push(event);
+		},
+	});
+
+	assert.equal(reports.length, 4);
+	assert.deepEqual(reports.map(r => r.totalCount), [4, 4, 4, 4]);
+	assert.deepEqual(reports.map(r => r.deletedCount), [1, 2, 3, 4]);
+	assert.deepEqual(reports.map(r => r.percent), [0.25, 0.5, 0.75, 1]);
+
+	const expectedPaths = ['1', '2', '3', '4'].map(x => path.join(temporaryPath, `${x}.tmp`));
+	assert.deepEqual(reports.map(r => r.path).toSorted((a, b) => a.localeCompare(b)), expectedPaths.toSorted((a, b) => a.localeCompare(b)));
+});
+
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */

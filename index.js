@@ -80,7 +80,7 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 	return removedFiles.toSorted((a, b) => a.localeCompare(b));
 }
 
-export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), ...options} = {}) {
+export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) {
 	options = {
 		expandDirectories: false,
 		onlyFiles: false,
@@ -94,7 +94,17 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), ...opt
 	const files = globbySync(patterns, options)
 		.toSorted((a, b) => b.localeCompare(a));
 
-	const removedFiles = files.map(file => {
+	if (files.length === 0) {
+		onProgress({
+			totalCount: 0,
+			deletedCount: 0,
+			percent: 1,
+		});
+	}
+
+	// `deletedCount` is derived from the position in the sorted list rather than
+	// a counter, as the deletions here are strictly sequential.
+	const removedFiles = files.map((file, index) => {
 		file = path.resolve(cwd, file);
 
 		if (!force) {
@@ -104,6 +114,15 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), ...opt
 		if (!dryRun) {
 			fs.rmSync(file, {recursive: true, force: true});
 		}
+
+		const deletedCount = index + 1;
+
+		onProgress({
+			totalCount: files.length,
+			deletedCount,
+			percent: deletedCount / files.length,
+			path: file,
+		});
 
 		return file;
 	});
