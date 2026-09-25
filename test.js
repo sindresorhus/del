@@ -814,4 +814,193 @@ test('deletes nothing when a matched path is outside cwd - sync', () => {
 	exists(fixtures);
 });
 
+// The two entry points are meant to be behavioural twins, differing only in
+// what they return. Comparing them on a nested tree with negations, dot files
+// and a duplicate-able path covers sorting, deduplication and the globby options
+// in one go.
+test('deleteAsync and deleteSync return the same paths', async () => {
+	fs.mkdirSync(path.join(temporaryPath, 'a/b/c'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'a/b/c/nested.js'), '');
+
+	const patterns = ['**/*', '!2.tmp', '!a/b/c/nested.js'];
+	const options = {cwd: temporaryPath, dot: true, dryRun: true};
+
+	const fromAsync = await deleteAsync(patterns, options);
+	const fromSync = deleteSync(patterns, options);
+
+	assert.deepEqual(fromAsync, fromSync);
+	assert.deepEqual(fromAsync.map(file => path.relative(temporaryPath, file)), [
+		'.dot.tmp',
+		'1.tmp',
+		'3.tmp',
+		'4.tmp',
+		'a',
+		'a/b',
+		'a/b/c',
+	]);
+});
+
+test('returns the deleted paths in ascending order - async', async () => {
+	fs.mkdirSync(path.join(temporaryPath, 'a/b'), {recursive: true});
+
+	const removed = await deleteAsync('**/*', {cwd: temporaryPath, dryRun: true});
+
+	assert.deepEqual(removed, removed.toSorted((a, b) => a.localeCompare(b)));
+});
+
+test('returns the deleted paths in ascending order - sync', () => {
+	fs.mkdirSync(path.join(temporaryPath, 'a/b'), {recursive: true});
+
+	const removed = deleteSync('**/*', {cwd: temporaryPath, dryRun: true});
+
+	assert.deepEqual(removed, removed.toSorted((a, b) => a.localeCompare(b)));
+});
+
+test('force: true allows deleting a path outside cwd - async', async () => {
+	const outsidePattern = createOutsideMarker();
+
+	const removed = await deleteAsync([outsidePattern], {cwd: temporaryPath, force: true});
+
+	assert.deepEqual(removed, [path.resolve(temporaryPath, outsidePattern)]);
+	assert.ok(!fs.existsSync(outsideMarkerPath));
+});
+
+test('force: true allows deleting a path outside cwd - sync', () => {
+	const outsidePattern = createOutsideMarker();
+
+	const removed = deleteSync([outsidePattern], {cwd: temporaryPath, force: true});
+
+	assert.deepEqual(removed, [path.resolve(temporaryPath, outsidePattern)]);
+	assert.ok(!fs.existsSync(outsideMarkerPath));
+});
+
+test('force: true allows deleting the cwd option - async', async () => {
+	const removed = await deleteAsync('.', {cwd: temporaryPath, force: true});
+
+	assert.deepEqual(removed, [temporaryPath]);
+	assert.ok(!fs.existsSync(temporaryPath));
+});
+
+test('force: true allows deleting the cwd option - sync', () => {
+	const removed = deleteSync('.', {cwd: temporaryPath, force: true});
+
+	assert.deepEqual(removed, [temporaryPath]);
+	assert.ok(!fs.existsSync(temporaryPath));
+});
+
+// A negation protects a file from a broader pattern, and the parent directory
+// is not swept up by `**` on the way.
+test('a negated pattern protects a file from a broader pattern - async', async () => {
+	fs.mkdirSync(path.join(temporaryPath, 'assets'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'assets', 'goat.png'), '');
+	fs.writeFileSync(path.join(temporaryPath, 'assets', 'other.png'), '');
+
+	await deleteAsync(['assets/**', '!assets/goat.png'], {cwd: temporaryPath});
+
+	exists(['assets', 'assets/goat.png']);
+	notExists(['assets/other.png']);
+});
+
+test('a negated pattern protects a file from a broader pattern - sync', () => {
+	fs.mkdirSync(path.join(temporaryPath, 'assets'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'assets', 'goat.png'), '');
+	fs.writeFileSync(path.join(temporaryPath, 'assets', 'other.png'), '');
+
+	deleteSync(['assets/**', '!assets/goat.png'], {cwd: temporaryPath});
+
+	exists(['assets', 'assets/goat.png']);
+	notExists(['assets/other.png']);
+});
+
+// A trailing separator restricts the pattern to directories.
+test('a trailing separator matches only directories - async', async () => {
+	fs.mkdirSync(path.join(temporaryPath, 'public/a'), {recursive: true});
+	fs.mkdirSync(path.join(temporaryPath, 'public/b'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'public/file.txt'), '');
+
+	const removed = await deleteAsync('public/*/', {cwd: temporaryPath});
+
+	assert.deepEqual(removed, [path.join(temporaryPath, 'public/a'), path.join(temporaryPath, 'public/b')]);
+	exists(['public/file.txt']);
+});
+
+test('a trailing separator matches only directories - sync', () => {
+	fs.mkdirSync(path.join(temporaryPath, 'public/a'), {recursive: true});
+	fs.mkdirSync(path.join(temporaryPath, 'public/b'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'public/file.txt'), '');
+
+	const removed = deleteSync('public/*/', {cwd: temporaryPath});
+
+	assert.deepEqual(removed, [path.join(temporaryPath, 'public/a'), path.join(temporaryPath, 'public/b')]);
+	exists(['public/file.txt']);
+});
+
+test('dot: false leaves dot files alone and dot: true includes them - async', async () => {
+	const withoutDot = await deleteAsync('*', {cwd: temporaryPath, dryRun: true});
+	assert.deepEqual(withoutDot.map(file => path.basename(file)), ['1.tmp', '2.tmp', '3.tmp', '4.tmp']);
+
+	const withDot = await deleteAsync('*', {cwd: temporaryPath, dot: true, dryRun: true});
+	assert.deepEqual(withDot.map(file => path.basename(file)), ['.dot.tmp', '1.tmp', '2.tmp', '3.tmp', '4.tmp']);
+});
+
+test('dot: false leaves dot files alone and dot: true includes them - sync', () => {
+	const withoutDot = deleteSync('*', {cwd: temporaryPath, dryRun: true});
+	assert.deepEqual(withoutDot.map(file => path.basename(file)), ['1.tmp', '2.tmp', '3.tmp', '4.tmp']);
+
+	const withDot = deleteSync('*', {cwd: temporaryPath, dot: true, dryRun: true});
+	assert.deepEqual(withDot.map(file => path.basename(file)), ['.dot.tmp', '1.tmp', '2.tmp', '3.tmp', '4.tmp']);
+});
+
+// Naming a directory removes it in one go, so a negation cannot rescue a file
+// inside it. This is the opposite of what the readme used to claim.
+test('naming a directory deletes its contents, negation notwithstanding - async', async () => {
+	fs.mkdirSync(path.join(temporaryPath, 'assets'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'assets', 'goat.png'), '');
+
+	await deleteAsync(['assets', '!assets/goat.png'], {cwd: temporaryPath});
+
+	notExists(['assets', 'assets/goat.png']);
+});
+
+test('naming a directory deletes its contents, negation notwithstanding - sync', () => {
+	fs.mkdirSync(path.join(temporaryPath, 'assets'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'assets', 'goat.png'), '');
+
+	deleteSync(['assets', '!assets/goat.png'], {cwd: temporaryPath});
+
+	notExists(['assets', 'assets/goat.png']);
+});
+
+// A trailing `**` covers everything inside a directory but not the directory
+// itself, so the empty directory is left behind.
+test('a trailing ** leaves the directory itself behind - async', async () => {
+	fs.mkdirSync(path.join(temporaryPath, 'assets/css'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'assets', 'goat.png'), '');
+	fs.writeFileSync(path.join(temporaryPath, 'assets/css/a.css'), '');
+
+	const removed = await deleteAsync(['assets/**', '!assets/goat.png'], {cwd: temporaryPath});
+
+	assert.deepEqual(removed, [
+		path.join(temporaryPath, 'assets/css'),
+		path.join(temporaryPath, 'assets/css/a.css'),
+	]);
+	exists(['assets', 'assets/goat.png']);
+	notExists(['assets/css']);
+});
+
+test('a trailing ** leaves the directory itself behind - sync', () => {
+	fs.mkdirSync(path.join(temporaryPath, 'assets/css'), {recursive: true});
+	fs.writeFileSync(path.join(temporaryPath, 'assets', 'goat.png'), '');
+	fs.writeFileSync(path.join(temporaryPath, 'assets/css/a.css'), '');
+
+	const removed = deleteSync(['assets/**', '!assets/goat.png'], {cwd: temporaryPath});
+
+	assert.deepEqual(removed, [
+		path.join(temporaryPath, 'assets/css'),
+		path.join(temporaryPath, 'assets/css/a.css'),
+	]);
+	exists(['assets', 'assets/goat.png']);
+	notExists(['assets/css']);
+});
+
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */

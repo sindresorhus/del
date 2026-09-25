@@ -25,18 +25,19 @@ console.log('Deleted directories:\n', deletedDirectoryPaths.join('\n'));
 
 ## Beware
 
-The glob pattern `**` matches all children and *the parent*.
+A trailing `**` matches everything inside a directory, but not the directory itself.
 
-So this won't work:
+So this keeps `goat.png` and deletes everything else in `public/assets`, but leaves the now empty `public/assets` directory behind:
 
 ```js
 deleteSync(['public/assets/**', '!public/assets/goat.png']);
 ```
 
-You have to explicitly ignore the parent directories too:
+Naming the directory directly removes it too, and a negated pattern cannot save a file in that case, as the directory and its contents go in one go:
 
 ```js
-deleteSync(['public/assets/**', '!public/assets', '!public/assets/goat.png']);
+deleteSync(['public/assets']);
+//=> `public/assets/goat.png` is gone as well
 ```
 
 To delete all subdirectories inside `public/`, you can do:
@@ -119,9 +120,9 @@ directory/
 import {deleteSync} from 'del';
 
 deleteSync('*', {dot: false});
-//=> ['package.json']
+//=> ['/…/package.json']
 deleteSync('*', {dot: true});
-//=> ['.editorconfig', 'package.json']
+//=> ['/…/.editorconfig', '/…/package.json']
 ```
 
 ##### concurrency
