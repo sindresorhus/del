@@ -51,6 +51,17 @@ function normalizePatterns(patterns) {
 	});
 }
 
+// Sorting descending guarantees children are deleted before their parents, as a
+// child path is a longer version of its parent's path.
+//
+// The paths are resolved and deduplicated here rather than while deleting,
+// because globby deduplicates on the pattern text, which keeps a trailing
+// separator, so `sub` and `sub/` come back as two entries for the same file.
+function resolveFiles(patterns, cwd) {
+	const files = new Set(patterns.map(pattern => path.resolve(cwd, pattern)));
+	return [...files].toSorted((a, b) => b.localeCompare(a));
+}
+
 export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) {
 	options = {
 		expandDirectories: false,
@@ -62,8 +73,7 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 
 	patterns = normalizePatterns(patterns);
 
-	const paths = await globby(patterns, options);
-	const files = paths.toSorted((a, b) => b.localeCompare(a));
+	const files = resolveFiles(await globby(patterns, options), cwd);
 
 	if (files.length === 0) {
 		onProgress({
@@ -76,8 +86,6 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 	let deletedCount = 0;
 
 	const mapper = async file => {
-		file = path.resolve(cwd, file);
-
 		if (!force) {
 			safeCheck(file, cwd);
 		}
@@ -114,8 +122,7 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), onProg
 
 	patterns = normalizePatterns(patterns);
 
-	const files = globbySync(patterns, options)
-		.toSorted((a, b) => b.localeCompare(a));
+	const files = resolveFiles(globbySync(patterns, options), cwd);
 
 	if (files.length === 0) {
 		onProgress({
@@ -128,8 +135,6 @@ export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), onProg
 	// `deletedCount` is derived from the position in the sorted list rather than
 	// a counter, as the deletions here are strictly sequential.
 	const removedFiles = files.map((file, index) => {
-		file = path.resolve(cwd, file);
-
 		if (!force) {
 			safeCheck(file, cwd);
 		}

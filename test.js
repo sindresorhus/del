@@ -667,4 +667,68 @@ test('negated pattern is left alone off Windows - sync', async () => {
 	exists(['temp/keep.js', 'temp/drop.js']);
 });
 
+// Globby deduplicates on the pattern text, and a trailing separator survives
+// that, so these patterns all name the same directory.
+const trailingSlashPatterns = [
+	['1.tmp', '1.tmp/'],
+	['1.tmp/', '1.tmp'],
+	['1.tmp', '1.tmp//'],
+	['./1.tmp', '1.tmp/'],
+];
+
+test('returns each path once for patterns that differ only by a trailing slash - async', async () => {
+	for (const patterns of trailingSlashPatterns) {
+		// eslint-disable-next-line no-await-in-loop
+		const removed = await deleteAsync(patterns, {cwd: temporaryPath, dryRun: true});
+
+		assert.deepEqual(removed, [path.join(temporaryPath, '1.tmp')]);
+	}
+});
+
+test('returns each path once for patterns that differ only by a trailing slash - sync', () => {
+	for (const patterns of trailingSlashPatterns) {
+		const removed = deleteSync(patterns, {cwd: temporaryPath, dryRun: true});
+
+		assert.deepEqual(removed, [path.join(temporaryPath, '1.tmp')]);
+	}
+});
+
+test('onProgress counts each path once for patterns that differ only by a trailing slash - async', async () => {
+	const reports = [];
+
+	await deleteAsync(['1.tmp', '1.tmp/'], {
+		cwd: temporaryPath,
+		dryRun: true,
+		onProgress(event) {
+			reports.push(event);
+		},
+	});
+
+	assert.deepEqual(reports, [{
+		totalCount: 1,
+		deletedCount: 1,
+		percent: 1,
+		path: path.join(temporaryPath, '1.tmp'),
+	}]);
+});
+
+test('onProgress counts each path once for patterns that differ only by a trailing slash - sync', () => {
+	const reports = [];
+
+	deleteSync(['1.tmp', '1.tmp/'], {
+		cwd: temporaryPath,
+		dryRun: true,
+		onProgress(event) {
+			reports.push(event);
+		},
+	});
+
+	assert.deepEqual(reports, [{
+		totalCount: 1,
+		deletedCount: 1,
+		percent: 1,
+		path: path.join(temporaryPath, '1.tmp'),
+	}]);
+});
+
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */
