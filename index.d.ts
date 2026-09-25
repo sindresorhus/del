@@ -19,7 +19,7 @@ export type ProgressData = {
 	/**
 	The absolute path of the deleted file or directory, or the one the `dryRun` option would have deleted.
 
-	It will not be present if nothing was deleted.
+	It is not present when the patterns matched nothing, which is the only time the report has no `path`.
 	*/
 	readonly path?: string;
 };
@@ -51,14 +51,16 @@ export type Options = {
 	/**
 	Concurrency limit. `deleteAsync` applies it to the deletions and, through globby, to how many directories are read at once. `deleteSync` deletes one path at a time and globby reads synchronously, so the option has no effect there. Minimum: `1`.
 
-	The paths are ordered so that a directory is removed after the paths inside it, but that order only holds as far as `concurrency` reaches, so a symlink that is the only route to its target can leave files behind. Use `1` if that matters.
+	The paths are ordered so that a directory is removed after the paths inside it, but that order only holds as far as `concurrency` reaches, so with `followSymbolicLinks: true` a symlink that is the only route to its target can leave files behind. Use `1` if that matters.
 
-	@default Infinity
+	@default `Infinity` for the deletions, `os.cpus().length` for the directory reads
 	*/
 	readonly concurrency?: number;
 
 	/**
 	The directory the patterns are relative to, and the boundary that `del` refuses to delete outside of without `force`.
+
+	Only the process working directory and the directories above it are protected no matter what this is set to, so a `cwd` elsewhere moves the boundary with it.
 
 	@default process.cwd()
 
@@ -73,7 +75,7 @@ export type Options = {
 	readonly cwd?: string;
 
 	/**
-	Called after each file or directory is deleted.
+	Called after each file or directory is deleted, and once with no `path` when the patterns matched nothing.
 
 	@example
 	```

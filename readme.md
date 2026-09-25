@@ -27,7 +27,7 @@ console.log('Deleted directories:\n', deletedDirectoryPaths.join('\n'));
 
 A trailing `**` matches everything inside a directory, but not the directory itself.
 
-So this keeps `goat.png` and deletes everything else in `public/assets`, but leaves the now empty `public/assets` directory behind:
+So this keeps `goat.png` and deletes everything else in `public/assets`, but leaves the `public/assets` directory behind, still holding `goat.png`:
 
 ```js
 deleteSync(['public/assets/**', '!public/assets/goat.png']);
@@ -46,7 +46,7 @@ To delete all subdirectories inside `public/`, you can do:
 deleteSync(['public/*/']);
 ```
 
-A pattern made up of nothing but negations matches everything, so this deletes the whole tree apart from `keep.js` and any dot files:
+A pattern made up of nothing but negations matches everything, so this deletes the whole tree apart from `keep.js` and any dot files. A negation only spares the exact path it names, so `sub/keep.js` goes with the rest:
 
 ```js
 deleteSync(['!keep.js']);
@@ -93,9 +93,9 @@ deleteSync(['[[]test-abc[]]']);
 //=> ['/…/[test-abc]']
 ```
 
-A character class is used rather than a backslash because `del` rewrites backslashes to forward-slashes on Windows, which would eat the escape.
+A character class is used rather than a backslash because on Windows `del` rewrites backslashes to forward-slashes, which would eat the escape. Only the patterns `del` takes for a path are rewritten, so `report \(1\).p*` keeps its backslashes while `report \(1\).pdf` does not. Off Windows nothing is rewritten and the backslash works.
 
-The other metacharacters are less surprising: `report [1].pdf` and `report {1}.pdf` do match their own names, but `report *1*.pdf` also matches `report 11.pdf`.
+The other metacharacters over-match rather than matching nothing: `report {1}.pdf` matches only its own name, `report [1].pdf` also matches `report 1.pdf`, and `report *1*.pdf` matches every `report` file with a `1` anywhere in it.
 
 #### options
 
@@ -166,27 +166,29 @@ Note that it does not protect `.git` itself, only the files that `.gitignore` ru
 
 ```js
 deleteSync('**/*', {gitignore: true, dot: true});
-//=> '.git', '.git/objects', … are deleted
+//=> `/…/.git`, `/…/.git/objects`, … are deleted
 ```
 
 Add `'**/.git'` to `ignore` if that is not what you want.
 
+The `.gitignore` files it reads are the ones inside `cwd` plus, when `cwd` is inside a Git repository, the ones from the repository root down. A `.gitignore` above `cwd` therefore applies too, and can leave out a file inside it that you asked to delete.
+
 ##### concurrency
 
 Type: `number`\
-Default: `Infinity`\
+Default: `Infinity` for the deletions, `os.cpus().length` for the directory reads\
 Minimum: `1`
 
 Concurrency limit. `deleteAsync` applies it to the deletions and, through [globby](https://github.com/sindresorhus/globby#options), to how many directories are read at once, so a low value also slows down finding the files. `deleteSync` deletes one path at a time and globby reads synchronously, so the option has no effect there.
 
-The paths are ordered so that a directory is always removed after the paths inside it, but that order only holds as far as `concurrency` reaches. A symlink that is the only route to its target can be unlinked before the paths below it are removed, which leaves them on disk while still reporting them as deleted. It leaves files behind rather than removing too much, and `concurrency: 1` avoids it.
+The paths are ordered so that a directory is always removed after the paths inside it, but that order only holds as far as `concurrency` reaches. With `followSymbolicLinks: true`, a symlink that is the only route to its target can be unlinked before the paths below it are removed, which leaves them on disk while still reporting them as deleted. It leaves files behind rather than removing too much, and `concurrency: 1` avoids it.
 
 ##### cwd
 
 Type: `string`\
 Default: `process.cwd()`
 
-The directory the patterns are relative to, and the boundary that `del` refuses to delete outside of without `force`.
+The directory the patterns are relative to, and the boundary that `del` refuses to delete outside of without `force`. Only the process working directory and the directories above it are protected no matter what this is set to, so a `cwd` elsewhere moves the boundary with it.
 
 ```js
 import {deleteSync} from 'del';
@@ -199,7 +201,7 @@ deleteSync('dist', {cwd: '/var/www/app'});
 
 Type: `(progress: ProgressData) => void`
 
-Called after each file or directory is deleted.
+Called after each file or directory is deleted, and once with no `path` when the patterns matched nothing.
 
 ```js
 import {deleteAsync} from 'del';
@@ -222,8 +224,8 @@ await deleteAsync(patterns, {
 ```
 
 - `percent` is a value between `0` and `1`
-- `path` is the absolute path of the deleted file or directory. It will not be present if nothing was deleted.
-- with the `dryRun` option, `deletedCount` and `path` describe what would have been deleted, since nothing is
+- `path` is the absolute path of the deleted file or directory. It is not present when the patterns matched nothing, which is the only time the report has no `path`.
+- with the `dryRun` option, `deletedCount` and `path` describe what would have been deleted, since nothing is deleted at all
 
 ## CLI
 

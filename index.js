@@ -41,6 +41,11 @@ function safeCheck(file, cwd, realCwd) {
 	// this check. A symlink is left out, as unlinking one removes the link and
 	// nothing else, and `process.cwd()` is always a realpath, so a link is never
 	// it.
+	//
+	// The first term is the only one that is redundant: the containment check
+	// below refuses the `cwd` either way, since `isPathInside` is false for a
+	// path equal to its parent. It is here to pick the message, which is the one
+	// thing a caller can act on when they name their own working directory.
 	const removesWorkingDirectory = path.relative(cwd, file) === ''
 		|| (!isLink && (realFile === realCwd || isPathCwd(realFile) || isPathInside(process.cwd(), realFile)));
 
