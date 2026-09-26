@@ -19,7 +19,7 @@ export type ProgressData = {
 	/**
 	The absolute path of the deleted file or directory, or the one the `dryRun` option would have deleted.
 
-	It is not present when the patterns matched nothing, which is the only time the report has no `path`.
+	It is not present when there is nothing to delete, which is the only time the report has no `path`.
 	*/
 	readonly path?: string;
 };
@@ -75,7 +75,7 @@ export type Options = {
 	readonly cwd?: string;
 
 	/**
-	Called after each file or directory is deleted, and once with no `path` when the patterns matched nothing.
+	Called after each file or directory is deleted, and once with no `path` when there is nothing to delete.
 
 	@example
 	```
@@ -94,6 +94,8 @@ export type Options = {
 Delete files and directories using glob patterns.
 
 Note that glob patterns can only contain forward-slashes, not backward-slashes. Windows file paths can use backward-slashes as long as the path does not contain any glob-like characters, otherwise use `path.posix.join()` instead of `path.join()`.
+
+For each group of positive patterns, `del` looks inside the matched directories twice to find what was left out, with and without the exclusions that follow that group. A later positive pattern can bring back a directory and its contents. These scans always recurse and include dot files, regardless of `deep`, `dot`, or `globstar`, so they also walk excluded directories like a large `node_modules`. They only run when there is an exclusion.
 
 If a deletion fails, no new `fs.rm` calls are started, and the promise rejects with the first error once the already-started `fs.rm` calls have settled. Node.js may continue deleting children of a directory after its recursive `fs.rm` call rejects.
 
@@ -121,6 +123,8 @@ export function deleteAsync(
 Synchronously delete files and directories using glob patterns.
 
 Note that glob patterns can only contain forward-slashes, not backward-slashes. Windows file paths can use backward-slashes as long as the path does not contain any glob-like characters, otherwise use `path.posix.join()` instead of `path.join()`.
+
+For each group of positive patterns, `del` looks inside the matched directories twice to find what was left out, with and without the exclusions that follow that group. A later positive pattern can bring back a directory and its contents. These scans always recurse and include dot files, regardless of `deep`, `dot`, or `globstar`, so they also walk excluded directories like a large `node_modules`. They only run when there is an exclusion.
 
 @param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 - [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/main/test/test.js)

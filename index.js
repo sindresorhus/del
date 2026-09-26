@@ -2,7 +2,13 @@ import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import {globby, globbySync} from 'globby';
+import {
+	globby,
+	globbySync,
+	generateGlobTasks,
+	generateGlobTasksSync,
+	convertPathToPattern,
+} from 'globby';
 import isGlob from 'is-glob';
 import isPathCwd from 'is-path-cwd';
 import isPathInside from 'is-path-inside';
@@ -93,6 +99,87 @@ function resolveFiles(matches, cwd) {
 	return [...files].toSorted((a, b) => b.localeCompare(a));
 }
 
+/*
+A directory is deleted with everything inside it, so a path left out on purpose would go with it, whether the patterns reach that path or only name the directory. The two globs returned here look inside the matched directories, with and without the exclusions, and what only the second finds was left out.
+
+It returns nothing without exclusions or matched directories, as there is then nothing to keep. Only the topmost matched directories are looked inside, as they hold the rest. A symlink is never looked inside or through, even with `followSymbolicLinks`, as removing a link only unlinks it, and looking through one would turn what it points at into paths to delete.
+
+Both globs include dot files and directories at any depth, whatever the options say, as deleting a directory removes all of it. Each group of positive patterns is scanned with the exclusions that follow it, so a later positive pattern can bring back a directory and everything inside it. The glob without the exclusions walks what they skip, such as `node_modules`, and skips a directory it cannot read rather than failing, as finding the directory itself is enough to keep what holds it.
+*/
+function globsInsideMatchedDirectories(patterns, matches, {ignore, gitignore, ignoreFiles, globalGitignore, deep, onlyFiles, onlyDirectories, ...options}) {
+	const negations = patterns.filter(pattern => pattern.startsWith('!'));
+	const hasExclusions = negations.length > 0 || ignore?.length > 0 || ignoreFiles?.length > 0 || gitignore || globalGitignore;
+
+	if (!hasExclusions) {
+		return;
+	}
+
+	const directories = new Set(matches.filter(match => match.endsWith('/') && !isSymbolicLink(path.resolve(options.cwd, match))));
+	const topmostDirectories = [...directories].filter(directory => !hasParentIn(directory, directories));
+
+	if (topmostDirectories.length === 0) {
+		return;
+	}
+
+	const insidePatterns = topmostDirectories.map(directory => `${convertPathToPattern(directory)}**`);
+	options = {
+		...options,
+		dot: true,
+		onlyFiles: false,
+		followSymbolicLinks: false,
+		globstar: true,
+	};
+
+	return {
+		withExclusions: {
+			patterns: insidePatterns,
+			options: {
+				...options,
+				ignore,
+				gitignore,
+				ignoreFiles,
+				globalGitignore,
+			},
+		},
+		withoutExclusions: {
+			patterns: insidePatterns,
+			options: {...options, suppressErrors: true},
+		},
+	};
+}
+
+// The paths are the ones globby returns, with `/` as the separator and a trailing one on a directory.
+function hasParentIn(directory, directories) {
+	for (let parent = path.posix.dirname(directory.slice(0, -1)); parent !== path.posix.dirname(parent); parent = path.posix.dirname(parent)) {
+		if (directories.has(`${parent}/`)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/*
+Every directory holding an excluded path is kept, and what else is directly inside it is deleted in its place. Such a path holds nothing excluded, or it would be kept too, so it can go with everything inside it.
+
+A path the patterns matched is never excluded, even when a negation matches it too, as a later pattern can bring back what an earlier negation left out.
+*/
+function keepParentsOfExcluded(matches, inside, insideWithoutExclusions, cwd) {
+	const files = matches.map(match => path.resolve(cwd, match));
+	const insideFiles = inside.map(match => path.resolve(cwd, match));
+	const excluded = new Set(insideWithoutExclusions.map(match => path.resolve(cwd, match))).difference(new Set([...insideFiles, ...files]));
+	const kept = new Set();
+
+	for (const file of excluded) {
+		// Once a directory is kept, so are all its parents.
+		for (let directory = path.dirname(file); !kept.has(directory) && directory !== path.dirname(directory); directory = path.dirname(directory)) {
+			kept.add(directory);
+		}
+	}
+
+	return [...files, ...insideFiles.filter(file => kept.has(path.dirname(file)))].filter(file => !kept.has(file));
+}
+
 // Every path is checked up front, so that a path outside the working directory
 // is refused before anything is deleted rather than after. The paths are sorted
 // with the parents last, so checking them one at a time while deleting would
@@ -148,6 +235,13 @@ function createOptions({expandDirectories, onlyFiles, followSymbolicLinks, ...op
 		followSymbolicLinks: followSymbolicLinks ?? false,
 		cwd,
 		...options,
+		/*
+		A trailing separator is how a directory is told apart from anything else among the matches.
+
+		Every match is resolved against `cwd` anyway, so `absolute` would only change how the matches are spelled. They must be spelled like the patterns, as the directories are looked inside with the same negations, and a relative negation does not apply to an absolute path.
+		*/
+		markDirectories: true,
+		absolute: false,
 	};
 }
 
@@ -165,7 +259,21 @@ function reportProgress(onProgress, totalCount, deletedCount, file) {
 export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) {
 	patterns = normalizePatterns(patterns);
 
-	const files = prepareFiles(await globby(patterns, createOptions(options, cwd)), {cwd, force, onProgress});
+	const globOptions = createOptions(options, cwd);
+	const globTasks = await generateGlobTasks(patterns, globOptions);
+	const taskMatches = await Promise.all(globTasks.map(task => globby(task.patterns, {...task.options, expandDirectories: false})));
+	let matches = taskMatches.flat();
+	const insideGlobs = globTasks.map((task, index) => globsInsideMatchedDirectories(patterns, taskMatches[index], {...task.options, expandDirectories: false})).filter(Boolean);
+
+	if (insideGlobs.length > 0) {
+		const scans = await Promise.all(insideGlobs.map(glob => Promise.all([
+			globby(glob.withExclusions.patterns, glob.withExclusions.options),
+			globby(glob.withoutExclusions.patterns, glob.withoutExclusions.options),
+		])));
+		matches = keepParentsOfExcluded(matches, scans.flatMap(([inside]) => inside), scans.flatMap(([, insideWithoutExclusions]) => insideWithoutExclusions), cwd);
+	}
+
+	const files = prepareFiles(matches, {cwd, force, onProgress});
 
 	let deletedCount = 0;
 	let firstError;
@@ -216,7 +324,19 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 export function deleteSync(patterns, {force, dryRun, cwd = process.cwd(), onProgress = () => {}, ...options} = {}) {
 	patterns = normalizePatterns(patterns);
 
-	const files = prepareFiles(globbySync(patterns, createOptions(options, cwd)), {cwd, force, onProgress});
+	const globOptions = createOptions(options, cwd);
+	const globTasks = generateGlobTasksSync(patterns, globOptions);
+	const taskMatches = globTasks.map(task => globbySync(task.patterns, {...task.options, expandDirectories: false}));
+	let matches = taskMatches.flat();
+	const insideGlobs = globTasks.map((task, index) => globsInsideMatchedDirectories(patterns, taskMatches[index], {...task.options, expandDirectories: false})).filter(Boolean);
+
+	if (insideGlobs.length > 0) {
+		const inside = insideGlobs.flatMap(glob => globbySync(glob.withExclusions.patterns, glob.withExclusions.options));
+		const insideWithoutExclusions = insideGlobs.flatMap(glob => globbySync(glob.withoutExclusions.patterns, glob.withoutExclusions.options));
+		matches = keepParentsOfExcluded(matches, inside, insideWithoutExclusions, cwd);
+	}
+
+	const files = prepareFiles(matches, {cwd, force, onProgress});
 
 	// `deletedCount` is derived from the position in the sorted list rather than
 	// a counter, as the deletions here are strictly sequential.

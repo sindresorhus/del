@@ -8,6 +8,8 @@ import {fileURLToPath} from 'node:url';
 import slash from 'slash';
 import {deleteAsync, deleteSync} from './index.js';
 
+/* eslint-disable max-lines -- Every behaviour is tested through both entry points in the loop below, so the tests stay together in one file. */
+
 /* eslint-disable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- False positives here: the assertions live in the `exists`/`notExists` helpers and in a loop that runs a fixed number of times, so the linter cannot see them at the call site, and the working-directory guard can only be tested by changing the working directory. */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -19,6 +21,18 @@ const cannotDeleteOutsideCwdMessage = 'Cannot delete files/directories outside t
 // Symlink creation needs elevated privileges on Windows.
 const symlinkTestOptions = process.platform === 'win32'
 	? {skip: 'Creating symlinks requires elevated privileges on Windows'}
+	: {};
+
+/*
+Version 16.2.4 of globby does not apply an absolute negation to an absolute pattern, which its next release fixes. Node.js 22 does not know `expectFailure` and would run the test as a normal one, so it is skipped there.
+*/
+const absoluteNegationTestOptions = typeof test.expectFailure === 'function'
+	? {expectFailure: 'globby 16.2.4 does not apply an absolute negation to an absolute pattern'}
+	: {skip: 'Node.js 22 has no expectFailure'};
+
+// A file name cannot hold a star on Windows.
+const starFileNameTestOptions = process.platform === 'win32'
+	? {skip: 'A file name cannot hold a star on Windows'}
 	: {};
 
 // A read-only directory keeps its entries from being deleted, except on Windows,
@@ -251,6 +265,21 @@ function exists(files) {
 function notExists(files) {
 	for (const file of files) {
 		assert.ok(!fs.existsSync(path.join(temporaryPath, file)));
+	}
+}
+
+// Creates each file along with the directories that hold it. A path ending in `/` is created as an empty directory.
+function createFiles(files) {
+	for (const file of files) {
+		const fullPath = path.join(temporaryPath, file);
+
+		if (file.endsWith('/')) {
+			fs.mkdirSync(fullPath, {recursive: true});
+			continue;
+		}
+
+		fs.mkdirSync(path.dirname(fullPath), {recursive: true});
+		fs.writeFileSync(fullPath, '');
 	}
 }
 
@@ -660,15 +689,20 @@ for (const {suffix, run, assertRejects} of entryPoints) {
 		notExists(['assets/other.png']);
 	});
 
-	// Naming a directory removes it in one go, so a negation cannot rescue a file
-	// inside it. This is the opposite of what the readme used to claim.
-	test(`naming a directory deletes its contents, negation notwithstanding - ${suffix}`, async () => {
-		fs.mkdirSync(path.join(temporaryPath, 'assets'), {recursive: true});
+	/*
+	Naming a directory deletes what is inside it too, so a negation inside it keeps the directory, and the rest of what is inside it is deleted.
+	*/
+	test(`naming a directory keeps it when a negation is inside it - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'assets/css'), {recursive: true});
 		fs.writeFileSync(path.join(temporaryPath, 'assets', 'goat.png'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets', 'other.png'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets/css/a.css'), '');
 
-		await run(['assets', '!assets/goat.png'], {cwd: temporaryPath});
+		const removed = await run(['assets', '!assets/goat.png'], {cwd: temporaryPath});
 
-		notExists(['assets', 'assets/goat.png']);
+		assert.deepEqual(relativePaths(removed), ['assets/css', 'assets/other.png']);
+		exists(['assets/goat.png']);
+		notExists(['assets/css', 'assets/other.png']);
 	});
 
 	// A trailing `**` covers everything inside a directory but not the directory
@@ -687,6 +721,629 @@ for (const {suffix, run, assertRejects} of entryPoints) {
 		]);
 		exists(['assets', 'assets/goat.png']);
 		notExists(['assets/css']);
+	});
+
+	/*
+	A directory goes with everything inside it, so the directories holding a negated path are kept, and the rest of what is inside them is deleted one path at a time.
+	*/
+	test(`a negated path keeps the directories that hold it - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'assets/sub/deep'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, 'assets/other.png'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets/sub/goat.png'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets/sub/other.png'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets/sub/deep/other.png'), '');
+
+		const removed = await run(['assets/**', '!assets/sub/goat.png'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), [
+			'assets/other.png',
+			'assets/sub/deep',
+			'assets/sub/deep/other.png',
+			'assets/sub/other.png',
+		]);
+		exists(['assets/sub/goat.png']);
+	});
+
+	test(`a negated glob keeps the directories that hold its matches - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'assets/a/b'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, 'assets/a/goat.png'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets/a/b/goat.png'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets/a/b/other.css'), '');
+
+		await run(['assets/**', '!**/goat.png'], {cwd: temporaryPath});
+
+		exists(['assets/a/goat.png', 'assets/a/b/goat.png']);
+		notExists(['assets/a/b/other.css']);
+	});
+
+	test(`the ignore option keeps the directories that hold what it ignores - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'package/.git'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, 'package/.git/HEAD'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'package/index.js'), '');
+
+		await run('**/*', {cwd: temporaryPath, dot: true, ignore: ['**/.git']});
+
+		exists(['package/.git/HEAD']);
+		notExists(['package/index.js']);
+	});
+
+	test(`gitignore: true keeps the directories that hold what it ignores - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'app'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, '.gitignore'), '*.log\n');
+		fs.writeFileSync(path.join(temporaryPath, 'app/debug.log'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'app/index.js'), '');
+
+		await run('**/*', {cwd: temporaryPath, gitignore: true});
+
+		exists(['app/debug.log']);
+		notExists(['app/index.js']);
+	});
+
+	test(`ignoreFiles keeps the directories that hold what it ignores - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'app'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, '.delignore'), '*.log\n');
+		fs.writeFileSync(path.join(temporaryPath, 'app/debug.log'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'app/index.js'), '');
+
+		await run('**/*', {cwd: temporaryPath, ignoreFiles: '.delignore'});
+
+		exists(['app/debug.log']);
+		notExists(['app/index.js']);
+	});
+
+	/*
+	Globby turns a list of nothing but negations into everything except them, so that is what the excluded paths are found against too.
+	*/
+	test(`a pattern of nothing but negations keeps the directories that hold them - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'sub'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, 'sub/keep.js'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'sub/other.js'), '');
+
+		await run(['!sub/keep.js'], {cwd: temporaryPath});
+
+		exists(['sub/keep.js']);
+		notExists(['sub/other.js', '1.tmp']);
+	});
+
+	test(`a negated directory keeps everything inside it - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'assets/sub/deep'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, 'assets/sub/deep/file'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets/other'), '');
+
+		await run(['assets/**', '!assets/sub'], {cwd: temporaryPath});
+
+		exists(['assets/sub/deep/file']);
+		notExists(['assets/other']);
+	});
+
+	/*
+	A negation applies only to the patterns before it, so a later pattern can bring a path back. That path is then deleted, while what the negation still leaves out keeps its directory.
+	*/
+	test(`a path brought back by a later pattern is deleted - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'a/b'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, 'a/b/keep.txt'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'a/b/other.txt'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'a/other.txt'), '');
+
+		await run(['a/**', '!a/b/**', 'a/b/keep.txt'], {cwd: temporaryPath});
+
+		exists(['a/b/other.txt']);
+		notExists(['a/b/keep.txt', 'a/other.txt']);
+	});
+
+	test(`an excluded path is found in a directory whose name has glob characters - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'assets/sub (1)/[x]'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, 'assets/sub (1)/[x]/goat.png'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets/sub (1)/[x]/other.png'), '');
+
+		await run(['assets/**', '!**/goat.png'], {cwd: temporaryPath});
+
+		exists(['assets/sub (1)/[x]/goat.png']);
+		notExists(['assets/sub (1)/[x]/other.png']);
+	});
+
+	test(`dryRun reports what a real run deletes when directories are kept - ${suffix}`, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'assets/sub'), {recursive: true});
+		fs.writeFileSync(path.join(temporaryPath, 'assets/sub/goat.png'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'assets/sub/other.png'), '');
+		const patterns = ['assets/**', '!assets/sub/goat.png'];
+
+		const planned = await run(patterns, {cwd: temporaryPath, dryRun: true});
+		const removed = await run(patterns, {cwd: temporaryPath});
+
+		assert.deepEqual(planned, removed);
+		assert.deepEqual(relativePaths(removed), ['assets/sub/other.png']);
+	});
+
+	test(`force keeps the directories outside the working directory that hold an excluded path - ${suffix}`, async () => {
+		const marker = createOutsideMarker();
+		fs.mkdirSync(path.join(outsideMarkerPath, 'sub'), {recursive: true});
+		fs.writeFileSync(path.join(outsideMarkerPath, 'sub/keep.txt'), '');
+		fs.writeFileSync(path.join(outsideMarkerPath, 'sub/other.txt'), '');
+
+		await run([`${marker}/**`, `!${marker}/sub/keep.txt`], {cwd: temporaryPath, force: true});
+
+		assert.ok(fs.existsSync(path.join(outsideMarkerPath, 'sub/keep.txt')));
+		assert.ok(!fs.existsSync(path.join(outsideMarkerPath, 'sub/other.txt')));
+	});
+
+	/*
+	The second glob walks what `ignore` skips, so a directory it cannot read must not fail a deletion that never needed to read it.
+	*/
+	test(`the ignore option still skips a directory that cannot be read - ${suffix}`, readOnlyDirectoryTestOptions, async () => {
+		const unreadable = path.join(temporaryPath, 'app/unreadable');
+		fs.mkdirSync(unreadable, {recursive: true});
+		fs.writeFileSync(path.join(unreadable, 'file'), '');
+		fs.writeFileSync(path.join(temporaryPath, 'app/index.js'), '');
+		fs.chmodSync(unreadable, 0o000);
+
+		try {
+			await run('app/**', {cwd: temporaryPath, ignore: ['**/unreadable']});
+		} finally {
+			fs.chmodSync(unreadable, 0o755);
+		}
+
+		exists(['app/unreadable/file']);
+		notExists(['app/index.js']);
+	});
+
+	test(`a negation keeps a directory matched by a single star - ${suffix}`, async () => {
+		createFiles(['out/a.css', 'out/sub/keep.png', 'out/sub/b.css']);
+
+		const removed = await run(['out/*', '!out/sub/keep.png'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['out/a.css', 'out/sub/b.css']);
+		exists(['out/sub/keep.png']);
+	});
+
+	test(`a negation deep inside a named directory keeps every directory on the way - ${suffix}`, async () => {
+		createFiles(['dist/a/b/c/keep.txt', 'dist/a/b/c/other.txt', 'dist/a/b/other/', 'dist/a/other.txt', 'dist/other.txt']);
+
+		const removed = await run(['dist', '!dist/a/b/c/keep.txt'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), [
+			'dist/a/b/c/other.txt',
+			'dist/a/b/other',
+			'dist/a/other.txt',
+			'dist/other.txt',
+		]);
+		exists(['dist/a/b/c/keep.txt']);
+	});
+
+	test(`a named directory with nothing excluded inside it is deleted as one path - ${suffix}`, async () => {
+		createFiles(['dist/a/b.txt', 'src/keep.txt']);
+
+		const removed = await run(['dist', '!src/keep.txt'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist']);
+		notExists(['dist']);
+	});
+
+	test(`a negation that matches nothing leaves a named directory to be deleted as one path - ${suffix}`, async () => {
+		createFiles(['dist/a.txt']);
+
+		const removed = await run(['dist', '!dist/missing.txt'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist']);
+	});
+
+	test(`the ignore option keeps what it ignores inside a named directory - ${suffix}`, async () => {
+		createFiles(['dist/app.js', 'dist/app.js.map', 'dist/lib/util.js', 'dist/lib/util.js.map']);
+
+		await run('dist', {cwd: temporaryPath, ignore: ['**/*.map']});
+
+		exists(['dist/app.js.map', 'dist/lib/util.js.map']);
+		notExists(['dist/app.js', 'dist/lib/util.js']);
+	});
+
+	test(`gitignore: true keeps what it ignores inside a named directory - ${suffix}`, async () => {
+		createFiles(['dist/app.js', 'dist/logs/debug.log']);
+		fs.writeFileSync(path.join(temporaryPath, '.gitignore'), '*.log\n');
+
+		await run('dist', {cwd: temporaryPath, gitignore: true});
+
+		exists(['dist/logs/debug.log']);
+		notExists(['dist/app.js']);
+	});
+
+	test(`the ignore option keeps a whole ignored directory inside a named directory - ${suffix}`, async () => {
+		createFiles(['packages/a/index.js', 'packages/a/node_modules/x/index.js', 'packages/b/index.js']);
+
+		const removed = await run('packages', {cwd: temporaryPath, ignore: ['**/node_modules']});
+
+		assert.deepEqual(relativePaths(removed), ['packages/a/index.js', 'packages/b']);
+		exists(['packages/a/node_modules/x/index.js']);
+		notExists(['packages/a/index.js', 'packages/b']);
+	});
+
+	test(`ignoreFiles keeps what it ignores inside a named directory - ${suffix}`, async () => {
+		createFiles(['dist/app.js', 'dist/logs/debug.log']);
+		fs.writeFileSync(path.join(temporaryPath, '.delignore'), '*.log\n');
+
+		await run('dist', {cwd: temporaryPath, ignoreFiles: '.delignore'});
+
+		exists(['dist/logs/debug.log']);
+		notExists(['dist/app.js']);
+	});
+
+	test(`an ignored directory that cannot be read inside a named directory is left alone - ${suffix}`, readOnlyDirectoryTestOptions, async () => {
+		createFiles(['app/index.js', 'app/secret/file']);
+		fs.writeFileSync(path.join(temporaryPath, '.gitignore'), 'secret\n');
+		const secret = path.join(temporaryPath, 'app/secret');
+		fs.chmodSync(secret, 0o000);
+
+		try {
+			assert.deepEqual(relativePaths(await run('app', {cwd: temporaryPath, dryRun: true, ignore: ['**/secret']})), ['app/index.js']);
+			assert.deepEqual(relativePaths(await run('app', {cwd: temporaryPath, dryRun: true, gitignore: true})), ['app/index.js']);
+		} finally {
+			fs.chmodSync(secret, 0o755);
+		}
+	});
+
+	test(`a directory both named and reached keeps a negated file - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/sub/other']);
+
+		const removed = await run(['dist', 'dist/**', '!dist/keep'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist/sub', 'dist/sub/other']);
+		exists(['dist/keep']);
+	});
+
+	test(`a directory named twice, once with a trailing separator, keeps a negated file - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/other']);
+
+		const removed = await run(['dist', 'dist/', '!dist/keep'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist/other']);
+		exists(['dist/keep']);
+	});
+
+	test(`a negated dot file inside a named directory is kept without the dot option - ${suffix}`, async () => {
+		createFiles(['dist/.gitkeep', 'dist/app.js']);
+
+		await run(['dist', '!dist/.gitkeep'], {cwd: temporaryPath});
+
+		exists(['dist/.gitkeep']);
+		notExists(['dist/app.js']);
+	});
+
+	test(`dot files inside a kept directory are deleted like the rest - ${suffix}`, async () => {
+		createFiles(['dist/keep.txt', 'dist/.cache/data', 'dist/.env']);
+
+		const removed = await run(['dist', '!dist/keep.txt'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist/.cache', 'dist/.env']);
+		exists(['dist/keep.txt']);
+	});
+
+	test(`a negated empty directory inside a named directory is kept - ${suffix}`, async () => {
+		createFiles(['dist/empty/', 'dist/app.js']);
+
+		await run(['dist', '!dist/empty'], {cwd: temporaryPath});
+
+		exists(['dist/empty']);
+		notExists(['dist/app.js']);
+	});
+
+	test(`a negated directory inside a named directory keeps everything inside it - ${suffix}`, async () => {
+		createFiles(['dist/keep/a/b.txt', 'dist/keep/c.txt', 'dist/app.js']);
+
+		await run(['dist', '!dist/keep'], {cwd: temporaryPath});
+
+		exists(['dist/keep/a/b.txt', 'dist/keep/c.txt']);
+		notExists(['dist/app.js']);
+	});
+
+	test(`a negated glob of a directory's contents keeps them inside a named directory - ${suffix}`, async () => {
+		createFiles(['dist/keep/a/b.txt', 'dist/app.js']);
+
+		await run(['dist', '!dist/keep/**'], {cwd: temporaryPath});
+
+		exists(['dist/keep/a/b.txt']);
+		notExists(['dist/app.js']);
+	});
+
+	test(`a negation keeps what it matches in every named directory - ${suffix}`, async () => {
+		createFiles(['a/keep', 'a/other', 'b/c/keep', 'b/c/other', 'c/other']);
+
+		const removed = await run(['a', 'b', 'c', '!**/keep'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['a/other', 'b/c/other', 'c']);
+		exists(['a/keep', 'b/c/keep']);
+	});
+
+	test(`a named directory inside another named directory is kept only once - ${suffix}`, async () => {
+		createFiles(['a/b/keep', 'a/b/other', 'a/other']);
+
+		const removed = await run(['a', 'a/b', '!a/b/keep'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['a/b/other', 'a/other']);
+		exists(['a/b/keep']);
+	});
+
+	test(`a path brought back by a later pattern is deleted from a named directory - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/other']);
+
+		const removed = await run(['dist', '!dist/keep', 'dist/keep'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist', 'dist/keep']);
+		notExists(['dist']);
+	});
+
+	test(`a negation keeps a file in a named directory whose name has glob characters - ${suffix}`, async () => {
+		createFiles(['sub (1)/[x]/{a,b}/keep', 'sub (1)/[x]/{a,b}/other', 'sub (1)/other']);
+
+		await run([String.raw`sub \(1\)`, String.raw`!sub \(1\)/\[x\]/\{a,b\}/keep`], {cwd: temporaryPath});
+
+		exists(['sub (1)/[x]/{a,b}/keep']);
+		notExists(['sub (1)/[x]/{a,b}/other', 'sub (1)/other']);
+	});
+
+	test(`a negation keeps a file in a named directory whose name has a star - ${suffix}`, starFileNameTestOptions, async () => {
+		createFiles(['a*b/keep', 'a*b/other', 'axb/other']);
+
+		await run([String.raw`a\*b`, '!**/keep'], {cwd: temporaryPath});
+
+		exists(['a*b/keep', 'axb/other']);
+		notExists(['a*b/other']);
+	});
+
+	test(`a matched directory whose name starts with an exclamation mark is looked inside - ${suffix}`, async () => {
+		createFiles(['!important/keep', '!important/other']);
+
+		await run([String.raw`\!important`, '!**/keep'], {cwd: temporaryPath});
+
+		exists(['!important/keep']);
+		notExists(['!important/other']);
+	});
+
+	test(`a negation written with a leading ./ keeps a file inside a named directory - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/other']);
+
+		await run(['dist', '!./dist/keep'], {cwd: temporaryPath});
+
+		exists(['dist/keep']);
+		notExists(['dist/other']);
+	});
+
+	test(`the deep option does not hide what is excluded inside a named directory - ${suffix}`, async () => {
+		createFiles(['dist/a/b/c/keep', 'dist/a/b/c/other']);
+
+		await run('dist', {cwd: temporaryPath, deep: 1, ignore: ['**/keep']});
+
+		exists(['dist/a/b/c/keep']);
+		notExists(['dist/a/b/c/other']);
+	});
+
+	test(`globstar: false does not hide a nested exclusion inside a named directory - ${suffix}`, async () => {
+		createFiles(['dist/a/b/keep', 'dist/a/b/other', 'dist/other']);
+
+		const removed = await run(['dist', '!dist/a/b/keep'], {cwd: temporaryPath, globstar: false});
+
+		assert.deepEqual(relativePaths(removed), ['dist/a/b/other', 'dist/other']);
+		exists(['dist/a/b/keep']);
+		notExists(['dist/a/b/other', 'dist/other']);
+	});
+
+	test(`a negation before a named directory does not exclude its contents - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/other']);
+
+		const removed = await run(['!dist/keep', 'dist'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist']);
+		notExists(['dist']);
+	});
+
+	test(`a later pattern brings back an excluded directory and its contents - ${suffix}`, async () => {
+		createFiles(['dist/sub/keep', 'dist/sub/other', 'dist/other']);
+
+		const removed = await run(['dist', '!dist/sub', 'dist/sub'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist', 'dist/sub']);
+		notExists(['dist']);
+	});
+
+	test(`onlyDirectories: true still finds an excluded file inside a matched directory - ${suffix}`, async () => {
+		createFiles(['dist/x/keep', 'dist/x/other', 'dist/y/other']);
+
+		await run(['dist/*', '!dist/x/keep'], {cwd: temporaryPath, onlyDirectories: true});
+
+		exists(['dist/x/keep']);
+		notExists(['dist/x/other', 'dist/y']);
+	});
+
+	test(`onlyFiles: true matches no directory, so nothing is looked inside - ${suffix}`, async () => {
+		createFiles(['dist/x/keep', 'dist/x/other']);
+
+		const removed = await run(['dist/**', '!dist/x/keep'], {cwd: temporaryPath, onlyFiles: true});
+
+		assert.deepEqual(relativePaths(removed), ['dist/x/other']);
+		exists(['dist/x/keep']);
+	});
+
+	test(`markDirectories: false does not stop a named directory from being kept - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/other']);
+
+		const removed = await run(['dist', '!dist/keep'], {cwd: temporaryPath, markDirectories: false});
+
+		assert.deepEqual(relativePaths(removed), ['dist/other']);
+		exists(['dist/keep']);
+	});
+
+	test(`absolute: true keeps a named directory with a negation inside it - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/other']);
+
+		const removed = await run(['dist', '!dist/keep'], {cwd: temporaryPath, absolute: true});
+
+		assert.deepEqual(relativePaths(removed), ['dist/other']);
+		exists(['dist/keep']);
+	});
+
+	test(`an absolute negation keeps a file inside a directory reached by an absolute pattern - ${suffix}`, absoluteNegationTestOptions, async () => {
+		createFiles(['dist/sub/keep', 'dist/sub/other']);
+		const directory = slash(path.join(temporaryPath, 'dist'));
+
+		const removed = await run([`${directory}/**`, `!${directory}/sub/keep`], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist/sub/other']);
+		exists(['dist/sub/keep']);
+	});
+
+	test(`an absolute negation keeps a file inside a directory named by an absolute pattern - ${suffix}`, absoluteNegationTestOptions, async () => {
+		createFiles(['dist/keep', 'dist/other']);
+		const directory = slash(path.join(temporaryPath, 'dist'));
+
+		const removed = await run([directory, `!${directory}/keep`], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['dist/other']);
+		exists(['dist/keep']);
+	});
+
+	test(`expandDirectories: true keeps a named directory with a negation inside it - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/sub/other']);
+
+		await run(['dist', '!dist/keep'], {cwd: temporaryPath, expandDirectories: true});
+
+		exists(['dist/keep']);
+		notExists(['dist/sub']);
+	});
+
+	test(`onProgress reports only what is deleted when a directory is kept - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/a', 'dist/b']);
+		const reports = [];
+
+		const removed = await run(['dist', '!dist/keep'], {
+			cwd: temporaryPath,
+			onProgress(progress) {
+				reports.push(progress);
+			},
+		});
+
+		assert.equal(reports.length, 2);
+		assert.ok(reports.every(report => report.totalCount === 2));
+		assert.deepEqual(reports.map(report => report.path).toSorted((a, b) => a.localeCompare(b)), removed);
+	});
+
+	test(`dryRun reports what a real run deletes from a named directory - ${suffix}`, async () => {
+		createFiles(['dist/keep', 'dist/a/b', 'dist/.c']);
+		const patterns = ['dist', '!dist/keep'];
+
+		const planned = await run(patterns, {cwd: temporaryPath, dryRun: true});
+		const removed = await run(patterns, {cwd: temporaryPath});
+
+		assert.deepEqual(planned, removed);
+		assert.deepEqual(relativePaths(removed), ['dist/.c', 'dist/a']);
+		exists(['dist/keep']);
+	});
+
+	test(`a kept directory outside the working directory still needs force - ${suffix}`, async () => {
+		const marker = createOutsideMarker();
+		fs.writeFileSync(path.join(outsideMarkerPath, 'keep'), '');
+		fs.writeFileSync(path.join(outsideMarkerPath, 'other'), '');
+
+		await assertRejects(() => run([marker, `!${marker}/keep`], {cwd: temporaryPath}), {
+			message: cannotDeleteOutsideCwdMessage,
+		});
+
+		assert.ok(fs.existsSync(path.join(outsideMarkerPath, 'other')));
+	});
+
+	test(`force keeps a named directory outside the working directory - ${suffix}`, async () => {
+		const marker = createOutsideMarker();
+		fs.writeFileSync(path.join(outsideMarkerPath, 'keep'), '');
+		fs.writeFileSync(path.join(outsideMarkerPath, 'other'), '');
+
+		await run([marker, `!${marker}/keep`], {cwd: temporaryPath, force: true});
+
+		assert.ok(fs.existsSync(path.join(outsideMarkerPath, 'keep')));
+		assert.ok(!fs.existsSync(path.join(outsideMarkerPath, 'other')));
+	});
+
+	test(`a directory that cannot be read inside a named directory fails before anything is deleted - ${suffix}`, readOnlyDirectoryTestOptions, async () => {
+		createFiles(['dist/keep', 'dist/other', 'dist/locked/file']);
+		const locked = path.join(temporaryPath, 'dist/locked');
+		fs.chmodSync(locked, 0o000);
+
+		try {
+			await assertRejects(() => run(['dist', '!dist/keep'], {cwd: temporaryPath}), {code: 'EACCES'});
+		} finally {
+			fs.chmodSync(locked, 0o755);
+		}
+
+		exists(['dist/keep', 'dist/other', 'dist/locked/file']);
+	});
+
+	test(`a named symlink is unlinked and its target is left alone - ${suffix}`, symlinkTestOptions, async () => {
+		const target = createOutsideDirectory('target');
+		fs.writeFileSync(path.join(target, 'keep'), '');
+		fs.writeFileSync(path.join(target, 'other'), '');
+		fs.symlinkSync(target, path.join(temporaryPath, 'link'), 'dir');
+
+		const removed = await run(['link', '!link/keep'], {cwd: temporaryPath});
+
+		assert.deepEqual(relativePaths(removed), ['link']);
+		assert.ok(!fs.existsSync(path.join(temporaryPath, 'link')));
+		assert.ok(fs.existsSync(path.join(target, 'other')));
+	});
+
+	test(`a symlink inside a kept directory is unlinked and its target is left alone - ${suffix}`, symlinkTestOptions, async () => {
+		const target = createOutsideDirectory('target');
+		fs.writeFileSync(path.join(target, 'keep'), '');
+		fs.writeFileSync(path.join(target, 'other'), '');
+		createFiles(['dist/keep', 'dist/other']);
+		fs.symlinkSync(target, path.join(temporaryPath, 'dist/link'), 'dir');
+
+		await run(['dist', '!**/keep'], {cwd: temporaryPath});
+
+		exists(['dist/keep']);
+		notExists(['dist/other', 'dist/link']);
+		assert.ok(fs.existsSync(path.join(target, 'keep')));
+		assert.ok(fs.existsSync(path.join(target, 'other')));
+	});
+
+	test(`followSymbolicLinks: true does not delete through a symlink inside a named directory - ${suffix}`, symlinkTestOptions, async () => {
+		createFiles(['real/keep.txt', 'real/other.txt', 'dist/keep.txt', 'dist/other.txt']);
+		fs.symlinkSync(path.join(temporaryPath, 'real'), path.join(temporaryPath, 'dist/link'), 'dir');
+
+		const removed = await run(['dist', '!**/keep.txt'], {cwd: temporaryPath, followSymbolicLinks: true});
+
+		assert.deepEqual(relativePaths(removed), ['dist/link', 'dist/other.txt']);
+		exists(['real/keep.txt', 'real/other.txt', 'dist/keep.txt']);
+	});
+
+	test(`followSymbolicLinks: true does not look inside a matched symlink - ${suffix}`, symlinkTestOptions, async () => {
+		createFiles(['real/keep.txt', 'real/other.txt']);
+		fs.mkdirSync(path.join(temporaryPath, 'dist'));
+		fs.symlinkSync(path.join(temporaryPath, 'real'), path.join(temporaryPath, 'dist/link'), 'dir');
+
+		const removed = await run(['dist/*', '!**/keep.txt'], {cwd: temporaryPath, followSymbolicLinks: true});
+
+		assert.deepEqual(relativePaths(removed), ['dist/link']);
+		exists(['real/keep.txt', 'real/other.txt']);
+	});
+
+	test(`force with followSymbolicLinks: true does not delete outside through a symlink inside a named directory - ${suffix}`, symlinkTestOptions, async () => {
+		const target = createOutsideDirectory('target');
+		fs.writeFileSync(path.join(target, 'keep.txt'), '');
+		fs.writeFileSync(path.join(target, 'other.txt'), '');
+		createFiles(['dist/keep.txt']);
+		fs.symlinkSync(target, path.join(temporaryPath, 'dist/link'), 'dir');
+
+		await run(['dist', '!**/keep.txt'], {cwd: temporaryPath, followSymbolicLinks: true, force: true});
+
+		assert.ok(fs.existsSync(path.join(target, 'other.txt')));
+		assert.ok(fs.existsSync(path.join(target, 'keep.txt')));
+	});
+
+	test(`a symlink loop inside a named directory does not stop the deletion - ${suffix}`, symlinkTestOptions, async () => {
+		const loop = createSymlinkLoop();
+		createFiles(['loop/keep', 'loop/other']);
+
+		await run(['loop', '!loop/keep'], {cwd: temporaryPath});
+
+		exists(['loop/keep']);
+		notExists(['loop/other', 'loop/a', 'loop/b']);
+		assert.ok(fs.existsSync(loop));
 	});
 
 	// A trailing separator restricts the pattern to directories.
@@ -1139,10 +1796,9 @@ test('deleteAsync and deleteSync return the same paths', async () => {
 		'1.tmp',
 		'3.tmp',
 		'4.tmp',
-		'a',
-		'a/b',
-		'a/b/c',
 	]);
 });
 
 /* eslint-enable node-test/require-assertion, node-test/no-conditional-assertion, node-test/no-process-chdir-in-test -- Re-enabled for anything added below this file. */
+
+/* eslint-enable max-lines */

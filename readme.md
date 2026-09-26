@@ -33,12 +33,14 @@ So this keeps `goat.png` and deletes everything else in `public/assets`, but lea
 deleteSync(['public/assets/**', '!public/assets/goat.png']);
 ```
 
-Naming the directory directly removes it too, and a negated pattern cannot save a file in that case, as the directory and its contents go in one go:
+Deleting a directory deletes everything inside it, except what is left out. A path that is left out, whether by a negated pattern or by the `ignore`, `gitignore`, `ignoreFiles`, or `globalGitignore` option, keeps the directories that hold it, and the rest of what is in them is deleted. This is so whether a pattern reaches inside the directory or only names it. So both of these keep `public/assets/icons` with `goat.png` inside it:
 
 ```js
-deleteSync(['public/assets']);
-//=> `public/assets/goat.png` is gone as well
+deleteSync(['public/assets/**', '!public/assets/icons/goat.png']);
+deleteSync(['public/assets', '!public/assets/icons/goat.png']);
 ```
+
+For each group of positive patterns, `del` looks inside the matched directories twice to find what was left out, with and without the exclusions that follow that group. A later positive pattern can bring back a directory and its contents. These scans always recurse and include dot files, regardless of `deep`, `dot`, or `globstar`, so they also walk excluded directories like a large `node_modules`. They only run when there is an exclusion.
 
 To delete all subdirectories inside `public/`, you can do:
 
@@ -203,7 +205,7 @@ deleteSync('dist', {cwd: '/var/www/app'});
 
 Type: `(progress: ProgressData) => void`
 
-Called after each file or directory is deleted, and once with no `path` when the patterns matched nothing.
+Called after each file or directory is deleted, and once with no `path` when there is nothing to delete.
 
 ```js
 import {deleteAsync} from 'del';
@@ -226,7 +228,7 @@ await deleteAsync(patterns, {
 ```
 
 - `percent` is a value between `0` and `1`
-- `path` is the absolute path of the deleted file or directory. It is not present when the patterns matched nothing, which is the only time the report has no `path`.
+- `path` is the absolute path of the deleted file or directory. It is not present when there is nothing to delete, which is the only time the report has no `path`.
 - with the `dryRun` option, `deletedCount` and `path` describe what would have been deleted, since nothing is deleted at all
 
 ## CLI
