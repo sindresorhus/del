@@ -95,6 +95,8 @@ Delete files and directories using glob patterns.
 
 Note that glob patterns can only contain forward-slashes, not backward-slashes. Windows file paths can use backward-slashes as long as the path does not contain any glob-like characters, otherwise use `path.posix.join()` instead of `path.join()`.
 
+If a deletion fails, no new `fs.rm` calls are started, and the promise rejects with the first error once the already-started `fs.rm` calls have settled. Node.js may continue deleting children of a directory after its recursive `fs.rm` call rejects.
+
 @param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 - [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/main/test/test.js)
 - [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)

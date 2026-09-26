@@ -64,6 +64,8 @@ Note that glob patterns can only contain forward-slashes, not backward-slashes. 
 
 Returns `Promise<string[]>` with the deleted paths.
 
+If a deletion fails, no new `fs.rm` calls are started, and the promise rejects with the first error once the already-started `fs.rm` calls have settled. Node.js may continue deleting children of a directory after its recursive `fs.rm` call rejects.
+
 ### deleteSync(patterns, options?)
 
 Returns `string[]` with the deleted paths.

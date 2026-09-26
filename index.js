@@ -6,7 +6,7 @@ import {globby, globbySync} from 'globby';
 import isGlob from 'is-glob';
 import isPathCwd from 'is-path-cwd';
 import isPathInside from 'is-path-inside';
-import pMap from 'p-map';
+import pMap, {pMapSkip} from 'p-map';
 import slash from 'slash';
 import {PresentableError} from 'presentable-error';
 
@@ -168,23 +168,42 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 	const files = prepareFiles(await globby(patterns, createOptions(options, cwd)), {cwd, force, onProgress});
 
 	let deletedCount = 0;
+	let firstError;
 
+	/*
+	A failure is held back until the `fs.rm` calls already running have settled. No new call starts once one has failed, which is where the sync side stops too. A throwing `onProgress` is held back the same way.
+
+	Node can keep deleting a directory's children after its recursive `fs.rm` rejects, so settling the calls does not guarantee those child removals have finished.
+	*/
 	const mapper = async file => {
-		if (!dryRun) {
-			// Windows can still hold a handle on a directory whose contents are
-			// gone, so `rmdir` reports an `EPERM` for a delete that then succeeds.
-			// `fs.rm` retries those errors, but only when asked to.
-			await fsPromises.rm(file, {recursive: true, force: true, maxRetries: 3});
+		if (firstError) {
+			return pMapSkip;
 		}
 
-		deletedCount += 1;
+		try {
+			if (!dryRun) {
+				// Windows can still hold a handle on a directory whose contents are
+				// gone, so `rmdir` reports an `EPERM` for a delete that then succeeds.
+				// `fs.rm` retries those errors, but only when asked to.
+				await fsPromises.rm(file, {recursive: true, force: true, maxRetries: 3});
+			}
 
-		reportProgress(onProgress, files.length, deletedCount, file);
+			deletedCount += 1;
 
-		return file;
+			reportProgress(onProgress, files.length, deletedCount, file);
+
+			return file;
+		} catch (error) {
+			firstError ??= error;
+			return pMapSkip;
+		}
 	};
 
 	const removedFiles = await pMap(files, mapper, options);
+
+	if (firstError) {
+		throw firstError;
+	}
 
 	return removedFiles.toSorted((a, b) => a.localeCompare(b));
 }

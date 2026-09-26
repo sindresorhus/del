@@ -21,6 +21,12 @@ const symlinkTestOptions = process.platform === 'win32'
 	? {skip: 'Creating symlinks requires elevated privileges on Windows'}
 	: {};
 
+// A read-only directory keeps its entries from being deleted, except on Windows,
+// which ignores the permission, and as root, which bypasses it.
+const readOnlyDirectoryTestOptions = process.platform === 'win32' || process.getuid?.() === 0
+	? {skip: 'A read-only directory does not stop a deletion on Windows or as root'}
+	: {};
+
 // The two entry points are meant to be behavioural twins, differing only in what
 // they return, so every behaviour below is written once and run through both.
 // They have already drifted once, which is what having the twins here prevents.
@@ -248,6 +254,31 @@ function notExists(files) {
 	}
 }
 
+// Creates `slow`, a directory large enough that deleting it is still in flight
+// when a quicker deletion next to it has already settled.
+function createSlowDirectory() {
+	const slow = path.join(temporaryPath, 'slow');
+	fs.mkdirSync(slow);
+	for (let index = 0; index < 500; index++) {
+		fs.writeFileSync(path.join(slow, String(index)), '');
+	}
+}
+
+// Runs `callback` while `locked/file` cannot be deleted. The directory is made
+// writable again afterwards, or the cleanup could not remove it.
+async function withLockedFile(callback) {
+	const locked = path.join(temporaryPath, 'locked');
+	fs.mkdirSync(locked);
+	fs.writeFileSync(path.join(locked, 'file'), '');
+	fs.chmodSync(locked, 0o555);
+
+	try {
+		await callback();
+	} finally {
+		fs.chmodSync(locked, 0o755);
+	}
+}
+
 // The expectations below are written the way a pattern is written, with forward
 // slashes, so the separator is normalised: `path.relative` gives `a\b` on
 // Windows and nothing below would ever match.
@@ -256,6 +287,18 @@ function relativePaths(files) {
 }
 
 for (const {suffix, run, assertRejects} of entryPoints) {
+	// The paths are deleted with `locked/file` first, so nothing after it may be
+	// started once it fails. `concurrency: 1` is what makes that observable on the
+	// async side.
+	test(`stops at the first failed deletion - ${suffix}`, readOnlyDirectoryTestOptions, async () => {
+		fs.mkdirSync(path.join(temporaryPath, 'a'));
+
+		await withLockedFile(async () => {
+			await assertRejects(() => run(['locked/file', 'a'], {cwd: temporaryPath, concurrency: 1}), {code: 'EACCES'});
+			exists(['a']);
+		});
+	});
+
 	test(`delete files - ${suffix}`, async () => {
 		await run(['*.tmp', '!1*'], {cwd: temporaryPath});
 
@@ -976,6 +1019,40 @@ test('concurrency: 1 removes what a symlink is the only route to - async', symli
 		'link/deep/x.js',
 	]);
 	assert.deepEqual(fs.readdirSync(target), []);
+});
+
+// A failed deletion must not reject while other deletions are still running, or
+// the caller sees the promise settle with files still being removed. `slow` is
+// still being deleted when `locked/file` fails.
+//
+// Async only, as the sync deletions run one after another, so nothing is in
+// flight when one of them throws.
+test('rejects only after the deletions in flight have settled - async', readOnlyDirectoryTestOptions, async () => {
+	createSlowDirectory();
+
+	await withLockedFile(async () => {
+		await assert.rejects(deleteAsync(['locked/file', 'slow'], {cwd: temporaryPath}), {code: 'EACCES'});
+		notExists(['slow']);
+	});
+});
+
+// The same holds for a throwing `onProgress`. `fast` is deleted, and reported,
+// while `slow` is still being deleted.
+test('rejects for a throwing onProgress only after the deletions in flight have settled - async', async () => {
+	createSlowDirectory();
+
+	fs.writeFileSync(path.join(temporaryPath, 'fast'), '');
+
+	const error = new Error('onProgress failed');
+
+	await assert.rejects(deleteAsync(['slow', 'fast'], {
+		cwd: temporaryPath,
+		onProgress() {
+			throw error;
+		},
+	}), error);
+
+	notExists(['slow', 'fast']);
 });
 
 test('concurrency: 1 removes what a symlink is the only route to - sync', symlinkTestOptions, () => {
