@@ -199,7 +199,12 @@ export async function deleteAsync(patterns, {force, dryRun, cwd = process.cwd(),
 		}
 	};
 
-	const removedFiles = await pMap(files, mapper, options);
+	/*
+	Node already caps the file system calls in flight at the size of its thread pool, 4 by default, so the limit here only decides how much work waits in line. A small one leaves the pool idle between the steps of each `fs.rm` and is measurably slower, while an unlimited one holds every path in flight at once and starts them all before a failure could stop any. 256 is as fast as unlimited.
+
+	It is set here rather than in `createOptions`, as globby has its own default for the same option.
+	*/
+	const removedFiles = await pMap(files, mapper, {...options, concurrency: options.concurrency ?? 256});
 
 	if (firstError) {
 		throw firstError;

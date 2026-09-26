@@ -178,7 +178,7 @@ The `.gitignore` files it reads are the ones inside `cwd` plus, when `cwd` is in
 ##### concurrency
 
 Type: `number`\
-Default: `Infinity` for the deletions, `os.cpus().length` for the directory reads\
+Default: `256` for the deletions, `os.cpus().length` for the directory reads\
 Minimum: `1`
 
 Concurrency limit. `deleteAsync` applies it to the deletions and, through [globby](https://github.com/sindresorhus/globby#options), to how many directories are read at once, so a low value also slows down finding the files. `deleteSync` deletes one path at a time and globby reads synchronously, so the option has no effect there.

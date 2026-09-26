@@ -505,8 +505,9 @@ for (const {suffix, run, assertRejects} of entryPoints) {
 	// batch took it with it or the tree changed underneath. That is not an
 	// error, which is what `force: true` on the `fs.rm` call is for.
 	//
-	// `concurrency: 1` because otherwise the async side starts every deletion at
-	// once and there is nothing left for the callback to take away.
+	// `concurrency: 1` because otherwise the async side starts every deletion of
+	// this small batch at once and there is nothing left for the callback to take
+	// away.
 	test(`a path that vanished between matching and deleting is not an error - ${suffix}`, async () => {
 		let hasReported = false;
 
@@ -1053,6 +1054,23 @@ test('rejects for a throwing onProgress only after the deletions in flight have 
 	}), error);
 
 	notExists(['slow', 'fast']);
+});
+
+// The deletions are limited to 256 at a time by default, so a failure keeps the
+// rest from starting. `locked/file` comes first, and the 255 paths after it start
+// alongside it. A deletion that finishes before `locked/file` fails can still
+// start one more path, so only the path furthest from that is checked to stay.
+test('stops at the first failed deletion with the default concurrency - async', readOnlyDirectoryTestOptions, async () => {
+	const files = Array.from({length: 300}, (_, index) => `file${String(index).padStart(3, '0')}`);
+	for (const file of files) {
+		fs.writeFileSync(path.join(temporaryPath, file), '');
+	}
+
+	await withLockedFile(async () => {
+		await assert.rejects(deleteAsync(['locked/file', 'file*'], {cwd: temporaryPath}), {code: 'EACCES'});
+		notExists(files.slice(-255));
+		exists([files[0]]);
+	});
 });
 
 test('concurrency: 1 removes what a symlink is the only route to - sync', symlinkTestOptions, () => {

@@ -53,7 +53,7 @@ export type Options = {
 
 	The paths are ordered so that a directory is removed after the paths inside it, but that order only holds as far as `concurrency` reaches, so with `followSymbolicLinks: true` a symlink that is the only route to its target can leave files behind. Use `1` if that matters.
 
-	@default `Infinity` for the deletions, `os.cpus().length` for the directory reads
+	@default `256` for the deletions, `os.cpus().length` for the directory reads
 	*/
 	readonly concurrency?: number;
 
