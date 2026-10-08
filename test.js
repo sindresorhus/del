@@ -24,11 +24,14 @@ const symlinkTestOptions = process.platform === 'win32'
 	: {};
 
 /*
-Version 16.2.4 of globby does not apply an absolute negation to an absolute pattern, which its next release fixes. Node.js 22 does not know `expectFailure` and would run the test as a normal one, so it is skipped there.
+Version 16.2.4 of globby does not apply an absolute negation to an absolute pattern, except on Windows, which its next release fixes. Node.js 22 does not know `expectFailure` and would run the test as a normal one, so it is skipped there.
 */
-const absoluteNegationTestOptions = typeof test.expectFailure === 'function'
-	? {expectFailure: 'globby 16.2.4 does not apply an absolute negation to an absolute pattern'}
-	: {skip: 'Node.js 22 has no expectFailure'};
+let absoluteNegationTestOptions = {};
+if (process.platform !== 'win32') {
+	absoluteNegationTestOptions = typeof test.expectFailure === 'function'
+		? {expectFailure: 'globby 16.2.4 does not apply an absolute negation to an absolute pattern'}
+		: {skip: 'Node.js 22 has no expectFailure'};
+}
 
 // A file name cannot hold a star on Windows.
 const starFileNameTestOptions = process.platform === 'win32'
@@ -1070,10 +1073,12 @@ for (const {suffix, run, assertRejects} of entryPoints) {
 		notExists(['dist']);
 	});
 
+	// The patterns below escape with character classes rather than backslashes, as
+	// on Windows `del` rewrites the backslashes in a pattern that is not a glob.
 	test(`a negation keeps a file in a named directory whose name has glob characters - ${suffix}`, async () => {
 		createFiles(['sub (1)/[x]/{a,b}/keep', 'sub (1)/[x]/{a,b}/other', 'sub (1)/other']);
 
-		await run([String.raw`sub \(1\)`, String.raw`!sub \(1\)/\[x\]/\{a,b\}/keep`], {cwd: temporaryPath});
+		await run(['sub [(]1[)]', '!sub [(]1[)]/[[]x[]]/[{]a,b[}]/keep'], {cwd: temporaryPath});
 
 		exists(['sub (1)/[x]/{a,b}/keep']);
 		notExists(['sub (1)/[x]/{a,b}/other', 'sub (1)/other']);
@@ -1091,7 +1096,7 @@ for (const {suffix, run, assertRejects} of entryPoints) {
 	test(`a matched directory whose name starts with an exclamation mark is looked inside - ${suffix}`, async () => {
 		createFiles(['!important/keep', '!important/other']);
 
-		await run([String.raw`\!important`, '!**/keep'], {cwd: temporaryPath});
+		await run(['?important', '!**/keep'], {cwd: temporaryPath});
 
 		exists(['!important/keep']);
 		notExists(['!important/other']);
@@ -1715,10 +1720,11 @@ test('rejects for a throwing onProgress only after the deletions in flight have 
 
 // The deletions are limited to 256 at a time by default, so a failure keeps the
 // rest from starting. `locked/file` comes first, and the 255 paths after it start
-// alongside it. A deletion that finishes before `locked/file` fails can still
-// start one more path, so only the path furthest from that is checked to stay.
+// alongside it. Each deletion that finishes before `locked/file` fails starts one
+// more path, and on a fast file system that is a few hundred, as each `fs.rm` is
+// several queued calls. So there are enough paths that the last one never starts.
 test('stops at the first failed deletion with the default concurrency - async', readOnlyDirectoryTestOptions, async () => {
-	const files = Array.from({length: 300}, (_, index) => `file${String(index).padStart(3, '0')}`);
+	const files = Array.from({length: 1000}, (_, index) => `file${String(index).padStart(3, '0')}`);
 	for (const file of files) {
 		fs.writeFileSync(path.join(temporaryPath, file), '');
 	}
