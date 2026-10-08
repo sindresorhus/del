@@ -48,13 +48,13 @@ To delete all subdirectories inside `public/`, you can do:
 deleteSync(['public/*/']);
 ```
 
-A pattern made up of nothing but negations matches everything, so this deletes the whole tree apart from `keep.js` and any dot files. A negation only spares the exact path it names, so `sub/keep.js` goes with the rest:
+A pattern made up of nothing but negations matches nothing, as a negation only leaves paths out. To delete everything except some paths, say so with a positive pattern. This deletes the whole tree apart from `keep.js` and the dot files and directories at the top (pass `dot: true` to include those too). A negation only spares the exact path it names, so `sub/keep.js` goes with the rest:
 
 ```js
-deleteSync(['!keep.js']);
+deleteSync(['**', '!keep.js']);
 ```
 
-Pass `expandNegationOnlyPatterns: false` to have such a pattern match nothing instead.
+You can pass `expandNegationOnlyPatterns: true` to have a pattern made up of nothing but negations match everything except them, like in `globby`.
 
 Suggestions on how to improve this welcome!
 
@@ -105,7 +105,7 @@ The other metacharacters over-match rather than matching nothing: `report {1}.pd
 
 Type: `object`
 
-You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the below options, except `objectMode` and `stats`, which return entries instead of paths. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
+You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the below options, except `objectMode` and `stats`, which return entries instead of paths. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, `followSymbolicLinks`, and `expandNegationOnlyPatterns` are `false` by default.
 
 ##### force
 

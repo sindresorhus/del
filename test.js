@@ -795,14 +795,14 @@ for (const {suffix, run, assertRejects} of entryPoints) {
 	});
 
 	/*
-	Globby turns a list of nothing but negations into everything except them, so that is what the excluded paths are found against too.
+	With `expandNegationOnlyPatterns: true`, globby turns a list of nothing but negations into everything except them, so that is what the excluded paths are found against too.
 	*/
 	test(`a pattern of nothing but negations keeps the directories that hold them - ${suffix}`, async () => {
 		fs.mkdirSync(path.join(temporaryPath, 'sub'), {recursive: true});
 		fs.writeFileSync(path.join(temporaryPath, 'sub/keep.js'), '');
 		fs.writeFileSync(path.join(temporaryPath, 'sub/other.js'), '');
 
-		await run(['!sub/keep.js'], {cwd: temporaryPath});
+		await run(['!sub/keep.js'], {cwd: temporaryPath, expandNegationOnlyPatterns: true});
 
 		exists(['sub/keep.js']);
 		notExists(['sub/other.js', '1.tmp']);
@@ -1371,20 +1371,30 @@ for (const {suffix, run, assertRejects} of entryPoints) {
 		assert.deepEqual(withDot.map(file => path.basename(file)), ['.dot.tmp', '1.tmp', '2.tmp', '3.tmp', '4.tmp']);
 	});
 
-	// A pattern of nothing but negations matches everything else, dot files
-	// included, and is what the readme documents.
-	test(`a pattern of nothing but negations matches everything else - ${suffix}`, async () => {
+	// A pattern of nothing but negations matches nothing, as a negation should
+	// only ever leave paths out.
+	test(`a pattern of nothing but negations matches nothing - ${suffix}`, async () => {
 		const removed = await run(['!1.tmp'], {cwd: temporaryPath});
-
-		assert.deepEqual(removed.map(file => path.basename(file)), ['2.tmp', '3.tmp', '4.tmp']);
-		exists(['1.tmp', '.dot.tmp']);
-	});
-
-	test(`expandNegationOnlyPatterns: false makes a negation-only pattern match nothing - ${suffix}`, async () => {
-		const removed = await run(['!1.tmp'], {cwd: temporaryPath, expandNegationOnlyPatterns: false});
 
 		assert.deepEqual(removed, []);
 		exists(fixtures);
+	});
+
+	// An explicit `undefined` must not hand the decision back to globby.
+	test(`expandNegationOnlyPatterns: undefined makes a negation-only pattern match nothing - ${suffix}`, async () => {
+		const removed = await run(['!1.tmp'], {cwd: temporaryPath, expandNegationOnlyPatterns: undefined});
+
+		assert.deepEqual(removed, []);
+		exists(fixtures);
+	});
+
+	// With `expandNegationOnlyPatterns: true`, a pattern of nothing but negations
+	// matches everything else, dot files excluded.
+	test(`expandNegationOnlyPatterns: true makes a negation-only pattern match everything else - ${suffix}`, async () => {
+		const removed = await run(['!1.tmp'], {cwd: temporaryPath, expandNegationOnlyPatterns: true});
+
+		assert.deepEqual(removed.map(file => path.basename(file)), ['2.tmp', '3.tmp', '4.tmp']);
+		exists(['1.tmp', '.dot.tmp']);
 	});
 
 	// A pattern is a glob, so a filename containing a metacharacter has to escape

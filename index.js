@@ -228,11 +228,16 @@ function realpathOrSelf(file) {
 // del's defaults underneath the options would let an explicit `undefined` hand
 // the decision back to globby and undo them. A config object spread in from
 // elsewhere carries such keys often enough to matter.
-function createOptions({expandDirectories, onlyFiles, followSymbolicLinks, ...options}, cwd) {
+//
+// A pattern of nothing but negations matches nothing, as a negation should only
+// ever leave paths out. Otherwise, adding one to an empty list of patterns would
+// turn deleting nothing into deleting everything.
+function createOptions({expandDirectories, onlyFiles, followSymbolicLinks, expandNegationOnlyPatterns, ...options}, cwd) {
 	return {
 		expandDirectories: expandDirectories ?? false,
 		onlyFiles: onlyFiles ?? false,
 		followSymbolicLinks: followSymbolicLinks ?? false,
+		expandNegationOnlyPatterns: expandNegationOnlyPatterns ?? false,
 		cwd,
 		...options,
 		/*

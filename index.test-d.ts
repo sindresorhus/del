@@ -27,7 +27,7 @@ expectType<string[]>(deleteSync(paths, {cwd: ''}));
 // Globby options that work at runtime stay in the type.
 expectType<Promise<string[]>>(deleteAsync(paths, {globalGitignore: true}));
 expectType<Promise<string[]>>(deleteAsync(paths, {gitignore: true}));
-expectType<Promise<string[]>>(deleteAsync(paths, {expandNegationOnlyPatterns: false}));
+expectType<Promise<string[]>>(deleteAsync(paths, {expandNegationOnlyPatterns: true}));
 
 // `del` resolves every matched path and hands it to `path.resolve`, so globby
 // options that return entries instead of path strings cannot work.

@@ -102,7 +102,7 @@ If a deletion fails, no new `fs.rm` calls are started, and the promise rejects w
 @param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 - [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/main/test/test.js)
 - [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
-@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options, except `objectMode` and `stats`, which return entries instead of paths. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
+@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options, except `objectMode` and `stats`, which return entries instead of paths. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, `followSymbolicLinks`, and `expandNegationOnlyPatterns` are `false` by default.
 @returns The deleted paths.
 
 @example
@@ -129,7 +129,7 @@ For each group of positive patterns, `del` looks inside the matched directories 
 @param patterns - See the supported [glob patterns](https://github.com/sindresorhus/globby#globbing-patterns).
 - [Pattern examples with expected matches](https://github.com/sindresorhus/multimatch/blob/main/test/test.js)
 - [Quick globbing pattern overview](https://github.com/sindresorhus/multimatch#globbing-patterns)
-@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options, except `objectMode` and `stats`, which return entries instead of paths. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, and `followSymbolicLinks` are `false` by default.
+@param options - You can specify any of the [`globby` options](https://github.com/sindresorhus/globby#options) in addition to the `del` options, except `objectMode` and `stats`, which return entries instead of paths. In contrast to the `globby` defaults, `expandDirectories`, `onlyFiles`, `followSymbolicLinks`, and `expandNegationOnlyPatterns` are `false` by default.
 @returns The deleted paths.
 */
 export function deleteSync(
